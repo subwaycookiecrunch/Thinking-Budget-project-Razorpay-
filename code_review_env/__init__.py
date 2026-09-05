@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 import json
 import random
+import copy
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 
@@ -18,7 +19,9 @@ from code_review_env.server.environment import (
     BUGGY_EPISODES,
     CODE_SNIPPETS,
     _risk_summary,
+    review_budget,
 )
+from code_review_env.scoring import classification_metrics
 
 
 @dataclass
@@ -29,8 +32,12 @@ class CodeReviewAction:
 
     def __post_init__(self):
         if not isinstance(self.decision, str):
-            self.decision = str(self.decision)
+            raise ValueError("decision must be 'flag' or 'skip'")
         self.decision = self.decision.strip().lower()
+        if self.decision not in {"flag", "skip"}:
+            raise ValueError("decision must be 'flag' or 'skip'")
+        if not isinstance(self.reasoning, str):
+            raise ValueError("reasoning must be text")
 
 
 @dataclass
@@ -49,6 +56,7 @@ class CodeReviewObservation:
     todo_score: float = 0.0
     recency_score: float = 0.0
     risk_summary: str = ""
+    source_code: str = ""
     review_budget: int = 5
     files_flagged: int = 0
     files_remaining: int = 0
@@ -58,12 +66,14 @@ class CodeReviewObservation:
 
 class CodeReviewEnv:
     """
-    Client and evaluation interface for the CodeReview environment.
-    Supports both local execution and persistent session client patterns.
+    Local sequential evaluation interface for the CodeReview environment.
+    Remote MCP sessions use openenv.core.generic_client.GenericEnvClient.
     """
 
     def __init__(self, base_url: Optional[str] = None, **kwargs):
-        self.base_url = base_url or os.getenv("ENV_SERVER_URL", "http://127.0.0.1:7860")
+        if base_url is not None:
+            raise ValueError("CodeReviewEnv is local-only. Use GenericEnvClient for a remote /ws session.")
+        self.base_url = None
         self._current_episode: Optional[Dict[str, Any]] = None
         self._files: List[Dict[str, Any]] = []
         self._current_index: int = 0
@@ -72,6 +82,7 @@ class CodeReviewEnv:
         self._skipped: List[str] = []
         self._bugs: set = set()
         self._done: bool = False
+        self._final_f1: float = 0.0
 
     def sync(self) -> "CodeReviewEnv":
         """Return synchronous context manager interface."""
@@ -91,7 +102,7 @@ class CodeReviewEnv:
         rng = random.Random(seed) if seed is not None else random.Random()
 
         # Filter by difficulty curriculum
-        candidates = BUGGY_EPISODES if BUGGY_EPISODES else EPISODES
+        candidates = EPISODES
         if difficulty == "easy":
             pool = [e for e in candidates if len(e["files"]) <= 15]
         elif difficulty == "medium":
@@ -99,12 +110,14 @@ class CodeReviewEnv:
         elif difficulty == "hard":
             pool = [e for e in candidates if len(e["files"]) >= 30]
         else:
-            pool = candidates
+            raise ValueError("difficulty must be easy, medium, or hard")
 
+        if not candidates:
+            raise RuntimeError("No episodes available")
         if not pool:
             pool = candidates
 
-        ep = dict(rng.choice(pool))
+        ep = copy.deepcopy(rng.choice(pool))
         files = [dict(f) for f in ep["files"]]
         rng.shuffle(files)
 
@@ -114,13 +127,14 @@ class CodeReviewEnv:
         self._flagged = []
         self._skipped = []
         self._bugs = {f["file"] for f in files if f.get("label") == 1}
-        self._budget = min(len(files), max(ep.get("total_bugs", 1) * 2 + 3, 5))
+        self._budget = review_budget(len(files))
+        self._final_f1 = 0.0
         self._done = False
 
         obs = self._build_observation()
         return StepResult(observation=obs, reward=0.0, done=False)
 
-    def _build_observation(self, final_f1: float = 0.0) -> CodeReviewObservation:
+    def _build_observation(self, final_f1: Optional[float] = None) -> CodeReviewObservation:
         ep = self._current_episode or {}
         cvss = float(ep.get("cvss", 0.0) or 0.0)
 
@@ -158,15 +172,20 @@ class CodeReviewEnv:
             todo_score=todos,
             recency_score=recency,
             risk_summary=risk,
+            source_code=CODE_SNIPPETS.get(file_path, ""),
             review_budget=self._budget,
             files_flagged=len(self._flagged),
             files_remaining=max(0, len(self._files) - self._current_index),
-            f1_score=final_f1,
+            f1_score=self._final_f1 if final_f1 is None else final_f1,
             metadata={"total_files": len(self._files)},
         )
 
     def step(self, action: CodeReviewAction) -> StepResult[CodeReviewObservation]:
         """Process agent's decision on the current file."""
+        if self._current_episode is None:
+            raise RuntimeError("Call reset() before step()")
+        if not isinstance(action, CodeReviewAction):
+            raise TypeError("action must be CodeReviewAction")
         if self._done or self._current_index >= len(self._files):
             obs = self._build_observation()
             return StepResult(observation=obs, reward=0.0, done=True)
@@ -177,23 +196,19 @@ class CodeReviewEnv:
         step_reward = 0.0
         if decision == "flag" and len(self._flagged) < self._budget:
             self._flagged.append(current_file)
-            step_reward = 1.0 if current_file in self._bugs else -0.5
+            step_reward = 0.0
         else:
             self._skipped.append(current_file)
-            step_reward = 0.1 if current_file not in self._bugs else -1.0
+            step_reward = 0.0
 
         self._current_index += 1
 
         if self._current_index >= len(self._files):
             self._done = True
             # Compute final episode metrics
-            flagged_set = set(self._flagged)
-            tp = len(flagged_set & self._bugs)
-            fp = len(flagged_set - self._bugs)
-            fn = len(self._bugs - flagged_set)
-            prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-            rec = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-            f1 = (2 * prec * rec / (prec + rec)) if (prec + rec) > 0 else 0.0
+            metrics = classification_metrics(self._flagged, self._bugs, [f["file"] for f in self._files])
+            f1 = metrics["f1"]
+            self._final_f1 = f1
 
             obs = self._build_observation(final_f1=f1)
             return StepResult(observation=obs, reward=f1, done=True)

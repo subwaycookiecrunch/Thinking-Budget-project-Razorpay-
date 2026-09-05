@@ -16,13 +16,13 @@ if ROOT not in sys.path:
 
 from fastapi import FastAPI
 from openenv.core.env_server.http_server import create_app
-from openenv.core.env_server.types import Action, Observation
-from code_review_env.server.environment import CodeReviewEnvironment
+from openenv.core.env_server import CallToolAction
+from code_review_env.server.environment import CodeReviewEnvironment, InvestigationObservation
 
 app: FastAPI = create_app(
     env=lambda: CodeReviewEnvironment(),
-    action_cls=Action,
-    observation_cls=Observation,
+    action_cls=CallToolAction,
+    observation_cls=InvestigationObservation,
     env_name="CodeReviewEnv",
 )
 

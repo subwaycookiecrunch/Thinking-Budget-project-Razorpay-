@@ -36,6 +36,7 @@ from the main train_grpo.py.
 from __future__ import annotations
 
 import re
+import json
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
@@ -46,7 +47,7 @@ from typing import List, Optional, Tuple
 BAND_RANGES = {
     "short":  (0,   80),
     "medium": (80,  250),
-    "long":   (250, 9999),
+    "long":   (250, float("inf")),
 }
 BAND_TARGETS = {  # midpoints used to define monotonic difficulty signal
     "short":  40,
@@ -121,107 +122,97 @@ def _difficulty_score(predicted: str, file_is_bug: Optional[bool]) -> float:
     return 0.5  # medium
 
 
-def _extract_filepath_from_tool_call(json_str: str) -> Optional[str]:
-    import json as _json
+def _parse_file_tool(json_str: str):
+    """Validate tool structure. Never execute model-produced Python or JSON."""
     try:
-        data = _json.loads(json_str)
-        args = data.get("arguments") or data.get("function", {}).get("arguments", {})
+        data = json.loads(json_str)
+        if not isinstance(data, dict):
+            return None
+        call = data.get("function", data)
+        if not isinstance(call, dict):
+            return None
+        name, args = call.get("name"), call.get("arguments", {})
         if isinstance(args, str):
-            args = _json.loads(args)
-        return args.get("file_path")
-    except Exception:
+            args = json.loads(args)
+        if not isinstance(args, dict):
+            return None
+        if name not in {"read_file", "get_function_list", "flag_vulnerable", "skip_file"}:
+            return None
+        path = args.get("file_path")
+        if not isinstance(path, str) or not path.strip() or len(path) > 4096:
+            return None
+        if name in {"flag_vulnerable", "skip_file"}:
+            reason = args.get("reasoning")
+            if not isinstance(reason, str) or not reason.strip() or len(reason) > 16000:
+                return None
+        return name, path
+    except (ValueError, TypeError):
         return None
+
+
+def _extract_filepath_from_tool_call(json_str: str) -> Optional[str]:
+    call = _parse_file_tool(json_str)
+    return call[1] if call else None
 
 
 def _extract_tool_name(json_str: str) -> Optional[str]:
-    import json as _json
-    try:
-        data = _json.loads(json_str)
-        return data.get("name") or data.get("function", {}).get("name")
-    except Exception:
-        return None
+    call = _parse_file_tool(json_str)
+    return call[0] if call else None
 
 
 def compute_metacognitive_reward(
     text: str,
     bug_files: Optional[set] = None,
+    valid_files: Optional[set] = None,
 ) -> MetacogResult:
+    """Score an auxiliary length-allocation proxy, not reasoning correctness.
+
+    ``None`` means ground truth unavailable; an empty set means all files safe.
+    Supply ``valid_files`` from the actual episode to reject hallucinated paths.
+    Without that set, path membership cannot be verified from completion text.
+    Coupling validates JSON/tool structure; only live execution proves success.
     """
-    Score a model completion's metacognitive behavior.
-
-    Args:
-        text: The model's full completion (post-prompt).
-        bug_files: Set of ground-truth vulnerable file paths for this episode,
-                   or None if unavailable (e.g. text-only fallback).
-
-    Returns:
-        MetacogResult with three sub-scores and a weighted raw_score.
-    """
-    bug_files = bug_files or set()
-
-    # ── 1. Pair predictions with their following <think> blocks ──────────
-    pred_think = RE_PRED_THINK.findall(text)
-    n_preds = len(RE_LOOSE_PRED.findall(text))
-    n_tool_calls = len(RE_TOOL_CALL.findall(text))
-
-    if not pred_think:
-        # The model didn't follow the metacognitive format.  Return zero
-        # signal but don't penalize so the GRPO loss can still flow from
-        # the live-execution reward; this just means metacognition has
-        # not been learned yet.
+    if not isinstance(text, str):
         return MetacogResult(0.0, 0.0, 0.0, 0, 0.0, [])
+    n_preds = len(re.findall(r"<budget_prediction>", text, re.IGNORECASE))
+    pairs = list(RE_PRED_THINK.finditer(text))
+    if not pairs or n_preds == 0:
+        return MetacogResult(0.0, 0.0, 0.0, n_preds, 0.0, [])
 
-    # ── 2. Calibration ────────────────────────────────────────────────────
-    calibration_scores = []
-    for pred, think_text in pred_think:
-        actual_len = len(think_text.strip())
-        calibration_scores.append(_calibration_score(pred.lower(), actual_len))
-    calibration = sum(calibration_scores) / len(calibration_scores)
-
-    # ── 3. Difficulty awareness + per-prediction details ─────────────────
-    # We walk the prediction-think-tool triples in order and attach the
-    # ground-truth label (if available) to each one.  The `details` list
-    # is consumed by the in-training calibration logger to build a real
-    # eval_calibration.json across the run.
-    diff_scores: List[float] = []
-    details: List[Tuple[str, int, Optional[int]]] = []
+    # Invalid bands and predictions without a think block remain in denominator.
+    calibration = sum(_calibration_score(m[1].lower(), len(m[2].strip()))
+                      for m in pairs) / n_preds
     coupled = 0
-    for pred, think_text, tool_json in RE_PRED_THINK_THEN_FLAG.findall(text):
+    diff_sum = 0.0
+    details: List[Tuple[str, int, Optional[int]]] = []
+    seen_decisions = set()
+    for match in RE_PRED_THINK_THEN_FLAG.finditer(text):
+        pred, think, tool_json = match.groups()
+        parsed = _parse_file_tool(tool_json)
+        if parsed is None:
+            continue
+        tool, path = parsed
+        if valid_files is not None and path not in valid_files:
+            continue
+        if tool in {"flag_vulnerable", "skip_file"}:
+            if path in seen_decisions:
+                continue
+            seen_decisions.add(path)
+        is_bug = None if bug_files is None else path in bug_files
         coupled += 1
-        actual_len = len(think_text.strip())
-        fpath = _extract_filepath_from_tool_call(tool_json)
-        tool = _extract_tool_name(tool_json) or ""
-        is_bug: Optional[bool]
-        if fpath is None:
-            is_bug = None
-        elif fpath in bug_files:
-            is_bug = True
-        elif tool in ("flag_vulnerable", "skip_file") and bug_files:
-            # the file is in the patch but not in bug_files → safe
-            is_bug = False
-        else:
-            is_bug = None
-        diff_scores.append(_difficulty_score(pred.lower(), is_bug))
-        label_int = None if is_bug is None else int(is_bug)
-        details.append((pred.lower(), actual_len, label_int))
+        diff = _difficulty_score(pred.lower(), is_bug)
+        # Correct length on a knowingly wrong decision earns no difficulty credit.
+        if is_bug is not None and ((tool == "flag_vulnerable" and not is_bug)
+                                   or (tool == "skip_file" and is_bug)):
+            diff = 0.0
+        diff_sum += diff
+        details.append((pred.lower(), len(think.strip()), None if is_bug is None else int(is_bug)))
 
-    difficulty_awareness = sum(diff_scores) / len(diff_scores) if diff_scores else 0.0
-    coupling = coupled / max(1, n_preds)
-
-    # ── 4. Aggregate ─────────────────────────────────────────────────────
-    # Calibration and difficulty are equal-weighted; coupling is a multiplier
-    # so a model that emits predictions but never grounds them in actions
-    # cannot game the score.
-    raw = (0.5 * calibration + 0.5 * difficulty_awareness) * (0.5 + 0.5 * coupling)
-
-    return MetacogResult(
-        calibration=calibration,
-        difficulty_awareness=difficulty_awareness,
-        coupling=coupling,
-        n_predictions=n_preds,
-        raw_score=max(0.0, min(1.0, raw)),
-        details=details,
-    )
+    difficulty = diff_sum / n_preds
+    coupling = min(1.0, coupled / n_preds)
+    raw = (0.5 * calibration + 0.5 * difficulty) * (0.5 + 0.5 * coupling)
+    return MetacogResult(calibration, difficulty, coupling, n_preds,
+                        max(0.0, min(1.0, raw)), details)
 
 
 # ── System-prompt patch ───────────────────────────────────────────────────

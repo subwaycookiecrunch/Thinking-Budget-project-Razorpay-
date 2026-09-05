@@ -1,0 +1,39 @@
+[
+  {
+    "id": "checkout",
+    "title": "Checkout refactor · 6 files",
+    "description": "A small payments team is adding automatic retries to checkout. Review the changed files before release. Source is a hand-authored synthetic fixture, not Razorpay production code.",
+    "files": [
+      {"path": "payments/checkout.py", "content": "import requests\n\ndef charge(order, gateway_url):\n    payload = {\n        'amount': order.amount_paise,\n        'currency': 'INR',\n        'customer_id': order.customer_id,\n    }\n    for attempt in range(3):\n        try:\n            response = requests.post(gateway_url + '/charges', json=payload, timeout=5)\n            response.raise_for_status()\n            return response.json()\n        except requests.Timeout:\n            if attempt == 2:\n                raise\n", "expected_issue": "Retries after an ambiguous timeout can repeat a successful charge because no stable idempotency key is sent."},
+      {"path": "webhooks/handler.py", "content": "import json\n\ndef handle_payment_event(request, orders):\n    event = json.loads(request.body)\n    if event['type'] == 'payment.captured':\n        orders.mark_paid(event['data']['order_id'])\n    return {'status': 'accepted'}\n", "expected_issue": "The handler trusts caller-controlled payment events without authenticating the webhook signature."},
+      {"path": "billing/money.py", "content": "from decimal import Decimal, ROUND_HALF_UP\n\ndef to_paise(amount):\n    value = Decimal(str(amount))\n    if not value.is_finite() or value < 0:\n        raise ValueError('Amount must be finite and non-negative')\n    return int((value * 100).quantize(Decimal('1'), rounding=ROUND_HALF_UP))\n", "expected_issue": null},
+      {"path": "orders/receipt.py", "content": "from html import escape\n\ndef receipt_label(order_id, customer_name):\n    return '<p>Order ' + escape(str(order_id)) + ' for ' + escape(customer_name) + '</p>'\n", "expected_issue": null},
+      {"path": "tests/test_money.py", "content": "from billing.money import to_paise\n\ndef test_decimal_conversion():\n    assert to_paise('19.99') == 1999\n    assert to_paise('0') == 0\n", "expected_issue": null},
+      {"path": "config/display.py", "content": "CURRENCY_SYMBOL = '₹'\nDATE_FORMAT = '%d %b %Y'\n\ndef format_order_number(number):\n    return f'ORD-{int(number):08d}'\n", "expected_issue": null}
+    ]
+  },
+  {
+    "id": "checkout_fixed",
+    "title": "Checkout fix · same 6 files",
+    "description": "The payment and webhook changes have been repaired. Check the proposed fixes. Both versions are synthetic fixtures; code is inspected as text and never executed.",
+    "files": [
+      {"path": "payments/checkout.py", "content": "import requests\n\ndef charge(order, gateway_url):\n    payload = {'amount': order.amount_paise, 'currency': 'INR', 'customer_id': order.customer_id}\n    headers = {'Idempotency-Key': str(order.payment_attempt_id)}\n    for attempt in range(3):\n        try:\n            response = requests.post(gateway_url + '/charges', json=payload, headers=headers, timeout=5)\n            response.raise_for_status()\n            return response.json()\n        except requests.Timeout:\n            if attempt == 2:\n                raise\n", "expected_issue": null},
+      {"path": "webhooks/handler.py", "content": "import hashlib\nimport hmac\nimport json\n\ndef handle_payment_event(request, orders, webhook_secret):\n    signature = request.headers.get('X-Payment-Signature', '')\n    expected = hmac.new(webhook_secret.encode(), request.body, hashlib.sha256).hexdigest()\n    if not hmac.compare_digest(signature, expected):\n        raise PermissionError('Invalid webhook signature')\n    event = json.loads(request.body)\n    if event['type'] == 'payment.captured':\n        orders.mark_paid_once(event['id'], event['data']['order_id'])\n    return {'status': 'accepted'}\n", "expected_issue": null},
+      {"path": "billing/money.py", "content": "from decimal import Decimal, ROUND_HALF_UP\n\ndef to_paise(amount):\n    value = Decimal(str(amount))\n    if not value.is_finite() or value < 0:\n        raise ValueError('Amount must be finite and non-negative')\n    return int((value * 100).quantize(Decimal('1'), rounding=ROUND_HALF_UP))\n", "expected_issue": null},
+      {"path": "orders/receipt.py", "content": "from html import escape\n\ndef receipt_label(order_id, customer_name):\n    return '<p>Order ' + escape(str(order_id)) + ' for ' + escape(customer_name) + '</p>'\n", "expected_issue": null},
+      {"path": "tests/test_money.py", "content": "from billing.money import to_paise\n\ndef test_decimal_conversion():\n    assert to_paise('19.99') == 1999\n    assert to_paise('0') == 0\n", "expected_issue": null},
+      {"path": "config/display.py", "content": "CURRENCY_SYMBOL = '₹'\nDATE_FORMAT = '%d %b %Y'\n\ndef format_order_number(number):\n    return f'ORD-{int(number):08d}'\n", "expected_issue": null}
+    ]
+  },
+  {
+    "id": "tenant",
+    "title": "Tenant isolation · 4 files",
+    "description": "A B2B dashboard is moving from single-tenant to multi-tenant. Find cross-customer data exposure. Hand-authored synthetic fixture.",
+    "files": [
+      {"path": "api/invoices.py", "content": "def get_invoice(db, authenticated_user, invoice_id):\n    row = db.execute(\n        'SELECT id, amount, customer_email FROM invoices WHERE id = ?',\n        (invoice_id,),\n    ).fetchone()\n    if row is None:\n        raise LookupError('Invoice not found')\n    return dict(row)\n", "expected_issue": "Any authenticated user can fetch another tenant's invoice because the query lacks tenant ownership filtering."},
+      {"path": "api/profile.py", "content": "def get_profile(db, authenticated_user):\n    return db.execute(\n        'SELECT display_name FROM users WHERE id = ? AND tenant_id = ?',\n        (authenticated_user.id, authenticated_user.tenant_id),\n    ).fetchone()\n", "expected_issue": null},
+      {"path": "utils/pagination.py", "content": "def page_bounds(page, page_size):\n    page = max(1, int(page))\n    page_size = min(100, max(1, int(page_size)))\n    return (page - 1) * page_size, page_size\n", "expected_issue": null},
+      {"path": "tests/test_pagination.py", "content": "from utils.pagination import page_bounds\n\ndef test_page_size_is_bounded():\n    assert page_bounds(1, 10000) == (0, 100)\n", "expected_issue": null}
+    ]
+  }
+]

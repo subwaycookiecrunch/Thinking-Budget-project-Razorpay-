@@ -7,252 +7,98 @@ sdk: gradio
 sdk_version: "5.29.0"
 app_file: app.py
 pinned: true
-license: mit
-tags:
-  - openenv
-  - openenv-mcp
-  - thinking-budget
-  - meta-cognition
-  - grpo
-  - qwen3
-  - security
 ---
 
 # The Thinking Budget
 
-[![Tests](https://img.shields.io/badge/Tests-46%20Passed-brightgreen.svg)](tests/)
-[![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://python.org)
-[![OpenEnv](https://img.shields.io/badge/OpenEnv-Standard%20MCP-purple.svg)](https://github.com/meta-pytorch/openenv)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+**Budget-aware code review for teams shipping AI-generated code.**
 
-Reasoning models think the same amount on everything. A one line variable declaration gets the same 4,000 token `<think>` block as a critical buffer overflow. This project trains a 1.7B model to predict how hard something is *before* it starts thinking, then rewards it for being right.
+Give a reviewer a batch of source files and a fixed output budget. See where review effort goes, inspect findings against the source, and keep unfinished work in a human-review queue.
 
-The model learns to skim easy files and deep dive on suspicious ones. 6x thinking ratio between bugs and safe files, up from basically flat.
+The product combines deterministic allocation with a model-based source reviewer. It exposes resource limits and failure states rather than implying that an incomplete review is complete. The bundled payment-idempotency example makes the workflow concrete; custom multi-file input lets a reviewer test it on different code.
 
-[Try it](https://huggingface.co/spaces/lucid987654/code-review-env-v3) · [GitHub](https://github.com/subwaycookiecrunch/Meta-final-round-) · [Blog](blog_post.md) · [Paper](PAPER.md)
+**Razorpay Buildathon · Track 05 — Open Track.** Start with [the judge guide](JUDGES.md). The local submission kit contains [a five-minute pitch](docs/PITCH_SCRIPT.md), [application answer drafts](docs/SUBMISSION_FORM.md), and [the candid assessment](docs/BRUTAL_ASSESSMENT.md).
 
-### Quick Test & Verification
-```bash
-pytest tests/ -v  # 46 unit & integration tests passing in ~3s
-```
+## Evidence first
 
-## What it does
+| Layer | What it demonstrates | What it does not establish |
+|---|---|---|
+| Review Lab | Source review, allocation, validated source quotations, unresolved work, and an audit export | Guaranteed defect detection or approval to ship |
+| Real model mode | Inference from the selected local or explicitly configured model | A newly trained model or improved model weights |
+| Offline mode | A deterministic rule-based review that works without model access | LLM inference |
+| Synthetic benchmark | Executed policy comparison with a common code detector and explicit reading cost | Held-out production accuracy, billed token savings, or business ROI |
+| Legacy research | An OpenEnv environment, reward objective, and training scaffolding | Verified adapter improvement, causal ablations, or generalization |
 
-Before each `<think>` block the model emits a prediction: `short`, `medium`, or `long`. After it's done reasoning, the reward checks three things:
+There are no trained adapter weights in this checkout. Historical “trained” traces and plots were produced with heuristic or constructed policies; they are not evidence of a trained model. The refreshed evaluation reports its own protocol and errors. See [research notes](PAPER.md) for the exact boundary.
 
-1. **Calibration**: did the actual thinking length match what was predicted?
-2. **Difficulty awareness**: did hard files get `long` and easy files get `short`?
-3. **Action coupling**: did every prediction lead to an actual tool call?
-
-That third one turned out to be the most important. Without it, a model can just emit perfect predictions and never do any work. With it, orphan predictions get their score halved.
-
-```
-<budget_prediction>long</budget_prediction>
-<think>
-do_ioctl_handler at line 412 calls copy_from_user with a user-supplied
-size and pipes the result into kmalloc. Classic integer overflow into
-heap allocation. This is the bug.
-</think>
-<tool_call>{"name":"flag_vulnerable","arguments":{...}}</tool_call>
-```
-
-## Numbers
-
-Results from heuristic agent proxies approximating trained model behavior. For real model metrics, train on A10G GPU via `train_grpo.py`.
-
-| Metric | Before | After (simulated) |
-|---|---:|---:|
-| Thinking on safe files | 170 chars | **78 chars** |
-| Thinking on buggy files | 182 chars | **473 chars** |
-| Bug vs safe ratio | 1.07x | **6.06x** |
-| Calibration accuracy | 33% (random) | **88%** |
-| F1 on triage episodes | 0.14 | **1.00** |
-| Transfer F1 (unseen domain) | 0.28 | **0.67** |
-| Adversarial attacks defeated | 0 | **5/5** |
-
-Training target: single A10G, ~12 hours. Qwen3 1.7B with LoRA r=16, 4 bit quantization.
-
-### Ablations
-
-**Truncation baseline:** what if you just hard cap `<think>` at a fixed length instead of training metacognition?
-
-| Approach | F1 | Thinking ratio |
-|---|---:|---:|
-| Untrained baseline | 0.14 | 1.07x |
-| Truncation at 80 chars | 0.14 | n/a |
-| Truncation at 40 chars | 0.14 | n/a |
-| **Trained (metacognitive)** | **1.00** | **6.06x** |
-
-Truncation doesn't change what gets flagged, so F1 stays at 0.14. The trained model catches more bugs because it learned to allocate thinking, not just reduce it.
-
-**Tag removal:** does the allocation survive without the `<budget_prediction>` tag?
-
-Untrained model thinking: 77 chars on bugs, 67 on safe. Cohen's d = 0.37, no separation.
-Trained model thinking (tag ignored): 1,324 chars on bugs, 35 on safe. Cohen's d = 6.65, massive separation.
-
-The allocation is in the weights, not the scaffolding. Run `python scripts/run_ablations.py` to reproduce.
-
-## The environment
-
-Security code review over a synthetic training environment. 150 CVE descriptions sourced from NVD (Log4Shell, Dirty COW, PwnKit, BlueKeep, Zerologon, etc) are paired with generated code scenarios across 2,922 source files. The code snippets are synthetic (not scraped from real repos) but reflect realistic vulnerability patterns matching each CVE type. The agent gets a CVE description and file paths but can't see code until it calls `read_file`, which costs investigation points. Budget is `2 × number_of_files` so you can't just read everything.
-
-Six MCP tools:
-
-| Tool | Cost | What it does |
-|---|---:|---|
-| `read_file(path)` | 1 pt | Read one file |
-| `search_code(pattern)` | 2 pt | Grep across all files |
-| `get_function_list(path)` | 1 pt | List functions + complexity |
-| `flag_vulnerable(path, reasoning)` | free | Flag a file |
-| `skip_file(path, reasoning)` | free | Skip a file |
-| `submit_report(summary)` | free | End the episode |
-
-The reward is a mix of live execution score and the metacognitive objective:
-
-```
-total = 0.50 * env_score + 0.30 * metacognitive_score + 0.20 * text_score
-```
-
-The metacognitive part combines calibration, difficulty awareness, and action coupling. The geometric structure means you can't game one axis without tanking another. Tried five different attack strategies, all scored below the honest policy.
-
-## Red team results
-
-| Strategy | Score |
-|---|---:|
-| Honest policy | **0.850** |
-| Padding (real work + garbage thinking) | 0.662 |
-| Flag everything | 0.426 |
-| Skip everything | 0.278 |
-| Invert difficulty predictions | 0.192 |
-| Predict without acting | 0.076 |
-
-The padding attack was closest because it actually does the job, it just fakes the reasoning depth. Still 22% behind. Run `python scripts/red_team.py` to reproduce.
-
-Full writeup in [`SAFEGUARDS.md`](SAFEGUARDS.md).
-
-## Transfer
-
-Ran a simulated trained policy (risk-driven heuristic approximating the GRPO-learned allocation pattern) on 5 held-out production domain episodes. The simulation uses structural features (churn, complexity) without ground-truth labels to approximate how the trained model allocates compute.
-
-- **Payment Processing PR (`TR-CR-001`)**: 12-file order-payment refactor with a race condition causing customer double-charging when idempotency tokens are dropped.
-- **JWT Auth Bypass (`TR-CR-002`)**: Path prefix regex flaw allowing unauthenticated access.
-- **ML Training Pipeline (`TR-CR-003`)**: Silent non-determinism regression in torch.compile.
-- **React Stale Closure (`TR-CR-004`)**: State synchronization defect.
-- **Multi-Tenant SQL (`TR-CR-005`)**: Missing tenant isolation filter.
-
-| Policy | F1 | Thinking ratio |
-|---|---:|---:|
-| Untrained baseline | 0.28 | 1.29x |
-| Simulated trained policy | **0.67** | **3.30x** |
-
-> **Note:** These numbers are from a heuristic proxy that approximates the trained model's behavior using structural risk features. For real model evaluation, run `train_grpo.py` on A10G GPU followed by inference. The imperfect F1 reflects realistic feature overlap — safe utility files (e.g., distributed lock helpers) often have higher complexity metrics than the actual bug files.
-
-## Before/after example
-
-**CVE-2021-41773 · `modules/mappers/mod_rewrite.c` · This file is SAFE (no bug)**
-
-<details>
-<summary>Untrained: wastes 312 chars and an investigation point on a config helper</summary>
-
-```
-<budget_prediction>long</budget_prediction>
-<think>
-This file handles URL rewriting rules for Apache. I need to check whether the
-path traversal vulnerability CVE-2021-41773 could be triggered through the
-rewrite module. The function ap_regex_exec processes user-supplied URLs against
-rewrite patterns. If the regex engine does not properly sanitize %2e sequences
-before path resolution, the rewrite could allow directory traversal. Let me
-trace the flow from ap_regex_exec through the substitution logic to see if
-decoded paths are re-normalized before being passed to the filesystem layer...
-</think>
-→ reads the file, wastes 1 investigation point
-```
-</details>
-
-<details>
-<summary>Trained: correctly skips in 43 chars</summary>
-
-```
-<budget_prediction>short</budget_prediction>
-<think>
-URL rewrite helper. Not in the request path.
-</think>
-→ skips the file, saves the investigation point for actual bugs
-```
-</details>
-
-Same model, same CVE, same file. Only difference is the metacognitive reward during training.
-
-## How to try it
-
-**Live demo:** Open the [Space](https://huggingface.co/spaces/lucid987654/code-review-env-v3), go to the Try The Agent tab, pick a CVE, watch it investigate.
-
-**Retrain it:** Click the Colab badge below. Clones the repo, installs deps, runs training. About 3 to 5 hours on A10G.
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/subwaycookiecrunch/Meta-final-round-/blob/main/train_colab.ipynb)
-
-**Run locally:**
-
-```python
-from code_review_env.server.environment import CodeReviewEnvironment
-from openenv.core.env_server import CallToolAction
-
-env = CodeReviewEnvironment()
-obs = env.reset(seed=42, difficulty="medium")
-print(obs.metadata["context"])
-
-obs = env.step(CallToolAction(
-    tool_name="read_file",
-    arguments={"file_path": "kernel/sched.c"},
-))
-```
-
-## Repo map
-
-| File | What it does |
-|---|---|
-| `app.py` | Gradio Space with 6 interactive tabs |
-| `tests/` | Complete test suite (46 passed unit & integration tests) |
-| `server/app.py` | FastAPI / OpenEnv MCP HTTP server entrypoint |
-| `train_grpo.py` | GRPO training with metacognitive reward |
-| `metacognitive_reward.py` | The calibration + difficulty + coupling reward |
-| `scripts/budget_processor.py` | LogitsProcessor for inference-time think caps |
-| `rubrics.py` | 8 composable sub-rubrics using OpenEnv's WeightedSum |
-| `transfer_eval.py` | Held-out domain transfer evaluation |
-| `eval_baseline.py` | Before/after comparison & calibration plotting |
-| `demo.py` | Strategy ablation (skip all / flag all / smart) |
-| `code_review_env/server/environment.py` | The MCP environment (6 tools + reward) |
-| `data/cve_training_data.json` | 150 CVE episodes from NVD |
-| `data/transfer_episodes.json` | 5 held-out non-CVE episodes (including Payment PR race condition) |
-| `PAPER.md` | Formal writeup |
-| `JUDGES.md` | Judge checklist, maps every criterion to a file/command |
-| `SAFEGUARDS.md` | Red team writeup |
-| `blog_post.md` | HF Blog post |
-
-## For Reviewers & Judges
-
-Start with [`JUDGES.md`](JUDGES.md). It maps every judging criterion to an exact file, command, or metric.
-
-Quick reproduce:
+## Try the product locally
 
 ```bash
-# 1. Run all 46 automated unit & integration tests (~3s)
-pytest tests/ -v
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python app.py
+```
 
-# 2. Verify red team anti-hacking safeguards
-python scripts/red_team.py
+Open the URL printed at startup. In Review Lab:
 
-# 3. Run domain transfer evaluation (including Payment PR race condition)
-python transfer_eval.py
+1. Load the synthetic payment example or provide a source bundle.
+2. Choose the review mode and budget.
+3. Run the review; inspect the source evidence and files still needing human review.
+4. Run a documented failure mode and inspect the audit trail.
+5. Export the result for review.
 
-# 4. Compare baseline vs trained model
+The offline mode requires no API key. A real model mode requires its indicated local runtime or explicitly configured endpoint. Model output is untrusted: quoting a real source line confirms the quote exists, not that the model's conclusion is correct.
+
+## Reproduce the evaluation
+
+```bash
+python -m pytest tests/ -q
 python eval_baseline.py
 ```
 
-## Links
+The default evaluation regenerates:
 
-- HF Space: https://huggingface.co/spaces/lucid987654/code-review-env-v3
-- Colab: [train_colab.ipynb](https://colab.research.google.com/github/subwaycookiecrunch/Meta-final-round-/blob/main/train_colab.ipynb)
-- GitHub: https://github.com/subwaycookiecrunch/Meta-final-round-
+- `grpo_output/benchmark_results.json`: protocol, policy summaries, uncertainty, and cost/error metrics.
+- `grpo_output/benchmark_episodes.jsonl`: per-episode evidence.
+- `grpo_output/benchmark_pareto.png`: the accuracy-versus-reading-cost comparison.
 
-MIT License. Built with PyTorch OpenEnv for compute-adaptive reasoning. Submitted to the Razorpay AI Buildathon 2026 — Open Track.
+Read the generated protocol before quoting a number. Policies use the same detector and differ in which files they read. Source characters read are a cost proxy; they are not tokenizer counts or measured API bills. The bundled dataset is synthetic and was available during policy development, so it is not an untouched test set.
+
+The research reward smoke tests are separate:
+
+```bash
+python metacognitive_reward.py
+python scripts/red_team.py
+```
+
+Five constructed reward attacks test a limited scoring fixture; they do not prove agent safety or a production training reward is ungameable.
+
+## Why these implementation choices
+
+AI is useful for interpreting source and explaining a suspected defect. Deterministic logic is better suited to counting resources, selecting within limits, parsing structured results, and checking whether cited evidence is present. The human reviewer decides whether a finding is valid and whether the change may ship.
+
+The review result must distinguish “finding,” “reviewed without a validated finding,” and “still needs review.” Budget limits, provider failure, and invalid responses are meaningful outcomes. They belong in the same report as successful findings.
+
+Adaptive reasoning budgets already have substantial prior work. This project's contribution is the bounded review workflow and its inspectable evidence. It makes no first-ever adaptive-thinking claim. See [related work and originality boundary](docs/BRUTAL_ASSESSMENT.md#related-work-and-originality-boundary).
+
+## Repository map
+
+| File | Purpose |
+|---|---|
+| `app.py` | Local interactive product and research views |
+| `benchmark.py` | Reproducible deterministic allocation benchmark |
+| `code_review_env/server/environment.py` | Six-tool OpenEnv investigation environment |
+| `server/app.py` | Environment HTTP entry point |
+| `metacognitive_reward.py` | Experimental budget calibration and action-coupling reward |
+| `scripts/budget_processor.py` | Experimental local decoding budget processor |
+| `train_grpo.py`, `train_sft_warmup.py` | Optional training scaffolding; not required for the demo |
+| `data/` | Synthetic episodes, generated source snippets, and historical trace fixtures |
+| `ENV.md`, `SAFEGUARDS.md`, `PAPER.md` | Contracts, failure boundaries, and research limitations |
+| `docs/` | Submission kit and evidence assessment |
+
+## Known limits
+
+The benchmark uses synthetic vulnerabilities and generated source, with feature/template correlations that can favor hand-designed rules. There is no independently labeled production evaluation or measured developer-time study. Character-based research diagnostics do not measure internal model cognition. Evidence checks are not semantic verification. Training and evaluation across truly held-out repositories remain future work.
+
+This repository is being prepared locally. Historical GitHub and Hugging Face links are not presented as verified deployments of this build. Publishing, video upload, and final form submission remain the entrant's actions.

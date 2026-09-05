@@ -78,8 +78,8 @@ def transfer_metrics_md():
         f"### Transfer to **{m['domain']}** — {m['n_episodes']} held-out episodes\n",
         "| Policy | F1 | Thinking ratio (bug / safe) |",
         "|---|---:|---:|",
-        f"| Untrained baseline | {m['untrained_f1']:.2f} | {m['untrained_thinking_ratio']:.2f}× |",
-        f"| Simulated trained policy | **{m['simulated_f1']:.2f}** | **{m['simulated_thinking_ratio']:.2f}×** |",
+        f"| Untrained baseline | {m.get('untrained_f1', 0.0):.2f} | {m.get('untrained_thinking_ratio', 1.0):.2f}× |",
+        f"| Simulated trained policy | **{m.get('simulated_f1', m.get('oracle_f1', 0.0)):.2f}** | **{m.get('simulated_thinking_ratio', m.get('oracle_thinking_ratio', 1.0)):.2f}×** |",
         "",
         "**The risk-driven allocation heuristic that approximates the trained policy's behavior "
         "transfers to a different code-review domain without retraining.**",
