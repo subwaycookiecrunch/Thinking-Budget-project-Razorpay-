@@ -254,4 +254,25 @@ Requested review exports are stored under `.cache/reviews/`.
 
 
 if __name__=="__main__":
-    app.queue(default_concurrency_limit=1).launch(server_name=os.getenv("APP_HOST","127.0.0.1"),server_port=int(os.getenv("PORT","7860")),ssr_mode=False,share=False,theme=THEME,css=(ROOT/"ui/style.css").read_text(),show_error=False,footer_links=[],blocked_paths=[str(ROOT/".git"),str(ROOT/".venv")])
+    host = os.getenv("APP_HOST", "127.0.0.1")
+    port = int(os.getenv("PORT", "7860"))
+    css_text = (ROOT/"ui/style.css").read_text() if (ROOT/"ui/style.css").exists() else ""
+    launched = False
+    for p in range(port, port + 10):
+        try:
+            app.queue(default_concurrency_limit=1).launch(
+                server_name=host,
+                server_port=p,
+                ssr_mode=False,
+                share=False,
+                theme=THEME,
+                css=css_text,
+                show_error=False,
+                footer_links=[],
+                blocked_paths=[str(ROOT/".git"), str(ROOT/".venv")]
+            )
+            launched = True
+            break
+        except OSError:
+            continue
+
