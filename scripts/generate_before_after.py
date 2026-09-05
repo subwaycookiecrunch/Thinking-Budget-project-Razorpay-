@@ -2,10 +2,13 @@
 """Generate before/after comparison: untrained vs trained thinking allocation."""
 import json
 import numpy as np
+import os
+from pathlib import Path
+
+os.environ.setdefault("MPLCONFIGDIR", str(Path(__file__).resolve().parent.parent / ".cache" / "matplotlib"))
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 traces = json.load(open(ROOT / "data" / "demo_traces.json"))

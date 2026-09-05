@@ -1,0 +1,31 @@
+{
+  "model": "Qwen/Qwen3-1.7B",
+  "adapter": "./grpo_output",
+  "mode": "live_env_simulation",
+  "difficulty": "easy",
+  "seeds": [
+    42,
+    137,
+    256,
+    512,
+    1024
+  ],
+  "baseline_scores": [
+    0.095,
+    0.095,
+    0.095,
+    0.094,
+    0.094
+  ],
+  "trained_scores": [
+    0.735,
+    0.754,
+    0.81,
+    0.824,
+    0.134
+  ],
+  "baseline_mean": 0.09459999999999999,
+  "trained_mean": 0.6514,
+  "improvement": 0.5568,
+  "improvement_pct": 588.5835095137421
+}

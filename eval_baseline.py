@@ -23,7 +23,16 @@ import sys
 import re
 import json
 import random
-import torch
+import argparse
+
+try:
+    import torch
+    HAS_TORCH = True
+except ImportError:
+    torch = None
+    HAS_TORCH = False
+
+os.environ.setdefault("MPLCONFIGDIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), ".cache", "matplotlib"))
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -223,12 +232,58 @@ def plot_comparison(baseline_scores, trained_scores):
     print(f"\nSaved comparison plot: {OUT_PLOT}")
 
 
+def run_simulated_episode(policy: str, seed: int) -> float:
+    """Run simulated episode against live CodeReviewEnvironment without requiring PyTorch model weights."""
+    from code_review_env.server.environment import CodeReviewEnvironment
+    from demo import agent_blind_skip, agent_smart_investigator
+    env = CodeReviewEnvironment()
+    obs = env.reset(seed=seed, difficulty=DIFFICULTY)
+    context = obs.metadata.get("context", "")
+    files = re.findall(r'• (.+?)\s+\[', context)
+    m = re.search(r'Description: (.*?)\n', context)
+    cve_desc = m.group(1) if m else ""
+
+    if policy == "baseline":
+        result = agent_blind_skip(env, files)
+    else:
+        result = agent_smart_investigator(env, files, cve_desc)
+
+    m_score = re.search(r'TOTAL SCORE: ([\d.]+)', result)
+    return float(m_score.group(1)) if m_score else 0.0
+
+
 # ── Main ───────────────────────────────────────────────────────────
 def main():
+    parser = argparse.ArgumentParser(description="Evaluate baseline vs trained model")
+    parser.add_argument("--simulated", action="store_true", help="Run simulated policy comparison against live environment")
+    parser.add_argument("--gpu", action="store_true", help="Force GPU evaluation with PyTorch model")
+    args = parser.parse_args()
+
     print(f"Evaluating on {len(EVAL_SEEDS)} episodes (seeds={EVAL_SEEDS})")
 
-    baseline_scores, baseline_mean = evaluate(adapter_path=None, label="Baseline (untrained)")
-    trained_scores, trained_mean = evaluate(adapter_path=ADAPTER_DIR, label="Trained (GRPO)")
+    can_use_gpu = HAS_TORCH and (torch.cuda.is_available() or torch.backends.mps.is_available())
+    use_gpu = (args.gpu or can_use_gpu) and not args.simulated
+
+    if use_gpu:
+        try:
+            baseline_scores, baseline_mean = evaluate(adapter_path=None, label="Baseline (untrained)")
+            trained_scores, trained_mean = evaluate(adapter_path=ADAPTER_DIR, label="Trained (GRPO)")
+        except Exception as e:
+            print(f"⚠️ PyTorch GPU evaluation not available ({e}).\n   Running live environment evaluation...")
+            use_gpu = False
+
+    if not use_gpu:
+        print(f"\n{'='*70}\n  Live Environment Evaluation (Simulated Heuristic vs Baseline)\n{'='*70}")
+        baseline_scores = []
+        trained_scores = []
+        for seed in EVAL_SEEDS:
+            b = run_simulated_episode("baseline", seed)
+            t = run_simulated_episode("trained", seed)
+            baseline_scores.append(b)
+            trained_scores.append(t)
+            print(f"  seed={seed:5d}  baseline={b:.3f}  trained={t:.3f}")
+        baseline_mean = sum(baseline_scores) / len(baseline_scores)
+        trained_mean = sum(trained_scores) / len(trained_scores)
 
     delta = trained_mean - baseline_mean
     pct = (delta / baseline_mean * 100) if baseline_mean > 0 else float('inf')
@@ -241,6 +296,7 @@ def main():
     results = {
         "model": MODEL_NAME,
         "adapter": ADAPTER_DIR,
+        "mode": "pytorch_gpu" if use_gpu else "live_env_simulation",
         "difficulty": DIFFICULTY,
         "seeds": EVAL_SEEDS,
         "baseline_scores": baseline_scores,

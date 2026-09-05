@@ -16,7 +16,12 @@ Usage:
 """
 
 from openenv.core.rubrics.base import Rubric
-from openenv.core.rubrics.containers import WeightedRubric
+try:
+    from openenv.core.rubrics.containers import WeightedSum
+    WeightedRubric = WeightedSum
+except ImportError:
+    from openenv.core.rubrics.containers import WeightedRubric  # type: ignore
+    WeightedSum = WeightedRubric
 
 
 # ── Individual rubric components ──────────────────────────────────

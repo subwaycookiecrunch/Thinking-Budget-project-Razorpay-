@@ -35,9 +35,11 @@ import json
 import random
 import sys
 from collections import defaultdict
+import os
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+os.environ.setdefault("MPLCONFIGDIR", str(Path(__file__).resolve().parent.parent / ".cache" / "matplotlib"))
 import matplotlib
 
 matplotlib.use("Agg")

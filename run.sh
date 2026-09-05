@@ -5,7 +5,9 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-export PYTHONPATH="$(dirname "$SCRIPT_DIR")"
+export PYTHONPATH="$SCRIPT_DIR:$(dirname "$SCRIPT_DIR"):$PYTHONPATH"
+export MPLCONFIGDIR="${MPLCONFIGDIR:-$SCRIPT_DIR/.cache/matplotlib}"
+mkdir -p "$MPLCONFIGDIR"
 
 echo "╔══════════════════════════════════════════════════╗"
 echo "║  CodeReviewEnv v3 — Security Code Investigator   ║"

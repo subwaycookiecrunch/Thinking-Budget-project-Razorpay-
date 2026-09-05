@@ -625,7 +625,12 @@ def main():
     with open(SNIPPETS_PATH, "w") as f:
         json.dump(snippets, f, indent=2)
 
-    print(f"✅ Added {added} transfer-domain code snippets to {SNIPPETS_PATH}")
+    alt_path = ROOT / "data" / "code_snippets.json"
+    if alt_path.parent.exists():
+        with open(alt_path, "w") as f:
+            json.dump(snippets, f, indent=2)
+
+    print(f"✅ Added {added} transfer-domain code snippets to {SNIPPETS_PATH} and {alt_path}")
     print(f"   Total snippets: {len(snippets)}")
 
 

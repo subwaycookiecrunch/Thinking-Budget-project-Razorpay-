@@ -34,6 +34,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+os.environ.setdefault("MPLCONFIGDIR", str(Path(__file__).resolve().parent.parent / ".cache" / "matplotlib"))
 import matplotlib
 
 matplotlib.use("Agg")

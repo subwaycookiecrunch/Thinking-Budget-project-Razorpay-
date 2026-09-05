@@ -54,6 +54,7 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+os.environ.setdefault("MPLCONFIGDIR", str(Path(__file__).resolve().parent / ".cache" / "matplotlib"))
 import matplotlib
 
 matplotlib.use("Agg")

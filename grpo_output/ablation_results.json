@@ -1,15 +1,15 @@
 {
   "truncation_baseline": {
     "insight": "Truncation does not change F1 because it does not change what files get flagged. It only reduces thinking length.",
-    "untrained_f1": 0.14285714285714288,
-    "truncated_f1": 0.14285714285714288,
+    "untrained_f1": 0.23232323232323235,
+    "truncated_f1": 0.23232323232323235,
     "trained_f1": 1.0
   },
   "tag_ablation": {
     "insight": "Thinking length separates bug files from safe files even when the budget_prediction tag is ignored in analysis.",
-    "trained_bug_avg": 1324.3636363636363,
-    "trained_safe_avg": 34.549019607843135,
-    "ratio_without_tag": 38.332886183056445,
-    "cohens_d": 6.645885552150778
+    "trained_bug_avg": 1358.1666666666667,
+    "trained_safe_avg": 41.270833333333336,
+    "ratio_without_tag": 32.90863200403837,
+    "cohens_d": 6.963829108728444
   }
 }

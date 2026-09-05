@@ -79,6 +79,8 @@ class InvestigationSession:
         self.episode = episode
         self.files = {f["file"]: f for f in episode["files"]}
         self.bugs = {f["file"] for f in episode["files"] if f["label"] == 1}
+        self.deceptive = {f["file"] for f in episode["files"]
+                         if f.get("is_deceptive", False)}
         self.flagged = set()
         self.skipped = set()
         self.reads = set()
@@ -90,6 +92,7 @@ class InvestigationSession:
         self.invest_used = 0
         self.done = False
         self.step_count = 0
+        self.thinking_cost = 0          # running total of reasoning chars
 
         # Thinking budget tracking (for Qwen3 thinking mode integration)
         # Tracks whether the agent applied deep reasoning to the RIGHT files
@@ -170,7 +173,8 @@ class CodeReviewEnvironment(MCPEnvironment):
                 f"{code}\n"
                 f"{'─'*50}\n"
                 f"[Budget: {s.invest_budget - s.invest_used} investigation points remaining | "
-                f"Flags: {len(s.flagged)}/{s.budget}]"
+                f"Flags: {len(s.flagged)}/{s.budget} | "
+                f"Thinking cost: {s.thinking_cost} chars]"
             )
 
         # ── Tool: search_code ────────────────────────────
@@ -274,6 +278,7 @@ class CodeReviewEnvironment(MCPEnvironment):
             s.flagged.add(file_path)
             s.flag_reasons[file_path] = reasoning
             s.record_reasoning(file_path, reasoning)  # Track thinking quality
+            s.thinking_cost += len(reasoning)
             is_bug = file_path in s.bugs
 
             status = "✓ CORRECT — this file IS vulnerable" if is_bug else "✗ INCORRECT — this file was safe"
@@ -305,6 +310,7 @@ class CodeReviewEnvironment(MCPEnvironment):
             s.step_count += 1
             s.skipped.add(file_path)
             s.record_reasoning(file_path, reasoning)  # Track thinking quality
+            s.thinking_cost += len(reasoning)
             is_bug = file_path in s.bugs
 
             status = "✓ CORRECT — this file is safe" if not is_bug else "✗ MISSED — this file WAS vulnerable!"
@@ -361,6 +367,10 @@ class CodeReviewEnvironment(MCPEnvironment):
                 0.15 * (1.0 if tp > 0 and fp == 0 else prec)      # Precision bonus
             )
 
+            # Count deceptive traps triggered (agent flagged a safe-but-suspicious file)
+            traps_triggered = len(s.flagged & s.deceptive)
+            traps_avoided = len(s.deceptive - s.flagged)
+
             result = (
                 f"{'='*60}\n"
                 f"  INVESTIGATION COMPLETE — {s.episode['cve_id']}\n"
@@ -379,7 +389,11 @@ class CodeReviewEnvironment(MCPEnvironment):
                 f"    Thinking efficiency: {thinking_eff:.2f}\n"
                 f"      Deep on bugs: {s.deep_thinks_on_bugs} | "
                 f"Shallow on bugs: {s.shallow_on_bugs} | "
-                f"Wasted deep: {s.deep_thinks_on_clean}\n\n"
+                f"Wasted deep: {s.deep_thinks_on_clean}\n"
+                f"    Deceptive files: {traps_triggered} traps triggered, "
+                f"{traps_avoided} correctly avoided"
+                f" (of {len(s.deceptive)} total)\n"
+                f"    Total thinking cost: {s.thinking_cost} chars\n\n"
                 f"  TOTAL SCORE: {total_reward:.3f}\n"
                 f"{'='*60}"
             )
@@ -459,6 +473,28 @@ class CodeReviewEnvironment(MCPEnvironment):
                 files[idx]["label"] = 1
             ep["files"] = files
             ep["total_bugs"] = sum(1 for f in files if f["label"] == 1)
+
+        # ── Inject deceptive files ──────────────────────────────
+        # Deceptive files are SAFE files with artificially high risk
+        # features (high churn, high complexity).  They look like
+        # bugs to any policy that thresholds on features alone.
+        # The agent MUST actually read and reason about the code.
+        n_safe = sum(1 for f in ep["files"] if f["label"] == 0)
+        n_deceptive = max(1, n_safe // 5)  # ~20% of safe files become traps
+        safe_indices = [i for i, f in enumerate(ep["files"]) if f["label"] == 0
+                       and not f.get("is_test_file")]
+        if safe_indices:
+            for idx in random.sample(safe_indices, min(n_deceptive, len(safe_indices))):
+                f = ep["files"][idx]
+                # Inflate features to look suspicious
+                orig_feat = list(f.get("features", [0, 0, 0, 0]))
+                f["features"] = [
+                    max(orig_feat[0], random.randint(60, 90)),   # high churn
+                    max(orig_feat[1], random.randint(55, 85)),   # high complexity
+                    orig_feat[2],
+                    max(orig_feat[3], random.randint(80, 100)),  # recently modified
+                ]
+                f["is_deceptive"] = True
 
         random.shuffle(ep["files"])
         budget = min(len(ep["files"]), max(ep["total_bugs"] * 2 + 3, 5))

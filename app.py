@@ -630,7 +630,7 @@ HEADLINE_MD = """
 """
 
 
-with gr.Blocks(theme=gr.themes.Soft(), title="The Thinking Budget") as app:
+with gr.Blocks(title="The Thinking Budget") as app:
     gr.Markdown(HEADLINE_MD)
 
     with gr.Tabs():
@@ -1096,4 +1096,4 @@ if __name__ == "__main__":
         print("🚀 [BOOT] Starting background training thread...")
         threading.Thread(target=run_training, daemon=True).start()
 
-    app.launch(server_name="0.0.0.0", server_port=7860, ssr_mode=False)
+    app.launch(server_name="0.0.0.0", server_port=7860, ssr_mode=False, theme=gr.themes.Soft())
