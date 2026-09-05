@@ -24,6 +24,7 @@ app: FastAPI = create_app(
     action_cls=CallToolAction,
     observation_cls=InvestigationObservation,
     env_name="CodeReviewEnv",
+    max_concurrent_envs=8,
 )
 
 if __name__ == "__main__":

@@ -1,60 +1,68 @@
-"""
-tests/test_budget_processor.py
-==============================
-Unit tests for inference-time budget enforcement in scripts/budget_processor.py.
-"""
-from __future__ import annotations
-
-import os
-import sys
-import unittest
-
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if ROOT not in sys.path:
-    sys.path.insert(0, ROOT)
-
-from scripts.budget_processor import enforce_character_budget
+import re
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import pytest
+from scripts.budget_processor import ThinkingBudgetProcessor, enforce_character_budget
 
 
-class TestBudgetProcessor(unittest.TestCase):
-    """Test character-level budget enforcement logic."""
-
-    def test_no_think_block(self):
-        text = 'Hello world! <tool_call>{"name": "read_file"}</tool_call>'
-        res = enforce_character_budget(text, per_block_budget=100)
-        self.assertEqual(res, text)
-
-    def test_under_budget_think_block(self):
-        text = "<think>Brief check.</think>\n<tool_call>{}</tool_call>"
-        res = enforce_character_budget(text, per_block_budget=100)
-        self.assertEqual(res, text)
-
-    def test_over_budget_truncation(self):
-        long_reasoning = "A" * 500
-        text = f"<think>{long_reasoning}</think>\n<tool_call>{{}}</tool_call>"
-        res = enforce_character_budget(text, per_block_budget=100)
-        # Should be truncated to 100 chars of A's plus the closing tag
-        self.assertIn("<think>", res)
-        self.assertIn("</think>", res)
-        inside = res[res.index("<think>") + 7 : res.index("</think>")]
-        self.assertIn("[truncated by budget]", inside)
-        self.assertTrue(inside.startswith("A" * 100))
-
-    def test_episode_global_budget(self):
-        # 2 blocks of 80 chars each, episode budget 100
-        block1 = f"<think>{'B' * 80}</think>"
-        block2 = f"<think>{'C' * 80}</think>"
-        text = f"{block1}\n{block2}"
-        res = enforce_character_budget(text, per_block_budget=200, episode_budget=100)
-
-        # First block should get 80 chars, second block should only get remaining 20
-        self.assertIn("B" * 80, res)
-        self.assertIn("C" * 20, res)
-        self.assertNotIn("C" * 21, res)
-
-    def test_empty_string(self):
-        self.assertEqual(enforce_character_budget("", per_block_budget=100), "")
+class Tokenizer:
+    def encode(self,text,add_special_tokens=False):
+        return [1] if text=="<think>" else [2]
+    def decode(self,ids):
+        return "<think>" if ids==[1] else "</think>"
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_character_caps_include_global_pool_and_zero():
+    text='<think>'+('x'*80)+'</think> mid <think>'+('y'*80)+'</think>'
+    result=enforce_character_budget(text,100,100)
+    blocks=re.findall(r'<think>(.*?)</think>',result)
+    assert [len(b) for b in blocks]==[80,20]
+    assert '[truncated by budget]' in result
+    assert enforce_character_budget('<think>abc</think>',10,0)=='<think></think>[truncated by budget]'
+
+
+def test_unclosed_block_is_capped_and_closed():
+    assert enforce_character_budget('before <think>abcdef',3)=='before <think>abc</think>[truncated by budget]'
+
+
+def test_plain_text_unchanged():
+    assert enforce_character_budget('ordinary text',0)=='ordinary text'
+
+
+@pytest.mark.parametrize('cap',[-1,True,1.5])
+def test_invalid_character_limit(cap):
+    with pytest.raises(ValueError):
+        enforce_character_budget('text',cap)
+
+
+def test_prompt_examples_not_counted_as_generated_thinking():
+    p=ThinkingBudgetProcessor(Tokenizer(),2,3,prompt_length=5)
+    assert p._sequence_state([1,8,8,2,1,7,7])==(True,2,2)
+
+
+def test_nested_open_cannot_reset_allowance():
+    p=ThinkingBudgetProcessor(Tokenizer(),2,3,prompt_length=1)
+    assert p._sequence_state([1,7,1,7])==(True,3,3)
+
+
+def test_budget_spans_blocks_and_calls_are_idempotent():
+    p=ThinkingBudgetProcessor(Tokenizer(),10,3,prompt_length=1)
+    seq=[1,7,7,2,1,7]
+    assert p._sequence_state(seq)==(True,1,3)
+    assert p._sequence_state(seq)==(True,1,3)
+
+
+def test_split_tag_tokenizer_rejected():
+    class Split(Tokenizer):
+        def encode(self,*args,**kwargs):return [1,2,3]
+    with pytest.raises(ValueError,match='atomic'):
+        ThinkingBudgetProcessor(Split())
+
+
+def test_real_logits_force_only_closing_tag():
+    torch=pytest.importorskip('torch')
+    p=ThinkingBudgetProcessor(Tokenizer(),2,prompt_length=1)
+    logits=torch.zeros((1,10))
+    result=p(torch.tensor([[1,4,5]]),logits)
+    assert torch.isfinite(result).sum().item()==1
+    assert result[0,2]==0

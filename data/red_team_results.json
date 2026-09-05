@@ -1,4 +1,8 @@
 {
+  "evidence_type": "constructed_reward_fixture_with_simplified_proxies",
+  "live_environment_executed": false,
+  "full_training_reward_parity": false,
+  "all_variants_below_reference": true,
   "weights": {
     "env": 0.5,
     "metacog": 0.3,

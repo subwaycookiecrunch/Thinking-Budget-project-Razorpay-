@@ -126,7 +126,7 @@ class TestRubricComponents(unittest.TestCase):
 
         # 0% coupling
         session = SimpleNamespace(prediction_count=4, coupled_count=0)
-        self.assertAlmostEqual(rubric(None, SimpleNamespace(session=session)), 0.5)
+        self.assertAlmostEqual(rubric(None, SimpleNamespace(session=session)), 0.0)
 
     def test_thinking_budget_composite_rubric(self):
         rubric = rubrics.ThinkingBudgetRubric()

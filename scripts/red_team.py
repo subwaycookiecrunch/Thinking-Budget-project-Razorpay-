@@ -5,13 +5,11 @@ Adversarial test of the metacognitive reward.
 
 We construct five families of *cheating* completions that try to hack the
 reward function and one *honest* completion.  Each is run through the
-exact same scoring path the trainer uses (`compute_metacognitive_reward`,
-plus a faithful re-implementation of the env-reward and text-reward
-shapes from `train_grpo.py::reward_fn`).  We then check that no attack
-strictly dominates the honest policy on the combined reward.
+current metacognitive function and simplified, historical environment/text
+proxies. This is not the live environment or full trainer reward. We check
+whether these constructed completions outrank the constructed reference.
 
-This is the empirical proof of the §8 ("Reward Hacking") safeguard the
-hackathon guide explicitly asks for.
+This small fixture is a regression probe, not proof of agent safety.
 
 Output: `data/red_team_results.json` and a printed Markdown table.
 
@@ -341,16 +339,17 @@ def main():
         print(f"\n⚠️  WARNING: {len(failures)} attack(s) tied or beat honest policy:")
         for f in failures:
             print(f"   - {f.name}: combined={f.combined}")
-        sys.exit(2)
-    print(
-        f"\n✅ All {len(scored) - 1} attacks scored strictly below the honest "
-        f"policy ({honest.combined:.3f}). The reward is hardened against the "
-        f"tested hacking strategies."
-    )
+    else:
+        print(f"\nAll {len(scored)-1} constructed variants scored below the reference ({honest.combined:.3f}).")
+    print("Scope: synthetic reward fixture with simplified proxies; not full trainer parity or a safety proof.")
 
     # ── Persist ──────────────────────────────────────────
     out_path = os.path.join(ROOT, "data", "red_team_results.json")
     payload = {
+        "evidence_type": "constructed_reward_fixture_with_simplified_proxies",
+        "live_environment_executed": False,
+        "full_training_reward_parity": False,
+        "all_variants_below_reference": not failures,
         "weights": {
             "env": ENV_WEIGHT, "metacog": METACOG_WEIGHT, "text": TEXT_WEIGHT,
         },
@@ -381,6 +380,8 @@ def main():
     with open(out_path, "w") as f:
         json.dump(payload, f, indent=2)
     print(f"\nResults written to {out_path}")
+    if failures:
+        sys.exit(2)
 
 
 if __name__ == "__main__":

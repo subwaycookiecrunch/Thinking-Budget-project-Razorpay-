@@ -1,234 +1,72 @@
-# OpenEnv Manifest — The Thinking Budget
-# Razorpay AI Buildathon 2026 — Open Track
-# Primary theme: #5 Wild Card  (out-of-box / metacognitive RL)
-# Secondary:    3.1 World Modeling → Professional Tasks
+# Research environment metadata. Product runtime is review_engine.py / app.py.
 name: thinking-budget
 display_name: "The Thinking Budget"
-version: "3.3.0"   # v3.3: right-sized training budget for A10G wall-clock
+version: "4.0.0"
 description: >
-  An RL environment + auxiliary objective that trains a reasoning LLM to
-  PREDICT how hard a problem is BEFORE solving it, then deliver exactly
-  that much reasoning, on the right files. The agent investigates a real
-  CVE patch using 6 MCP tools; before each <think> block it must emit
-  <budget_prediction>short|medium|long</budget_prediction>. The reward
-  function scores calibration, difficulty awareness, and coupling on top
-  of task F1. At inference time, a LogitsProcessor hard-caps <think>
-  tokens; the trained policy degrades gracefully under arbitrary
-  compute tightening. The learned policy transfers without retraining
-  to held-out non-CVE domains (PR review for race conditions, auth
-  bypasses, tenant leaks): F1 0.28 → 1.00, 5.2× allocation ratio
-  preserved.
-
-theme: "5 Wild Card (primary) + 3.1 World Modeling / Professional Tasks (secondary)"
-license: mit
-authors:
-  - name: lucid987654
-    affiliation: independent
-
-# ── Environment Class ──────────────────────────────────────────────
+  A local code-review workflow with deterministic resource allocation,
+  pretrained model inference, exact source-evidence checks, and explicit
+  human-review handoffs. Includes a synthetic OpenEnv research environment,
+  an experimental budget-calibration reward, and saved Qwen2.5 LoRA training
+  artifacts. No trained-model improvement or production accuracy is claimed.
+track: "Razorpay Buildathon 2026 — Track 05 Open Track"
 environment:
   class: code_review_env.server.environment:CodeReviewEnvironment
   base: openenv.core.env_server.MCPEnvironment
   supports_concurrent_sessions: true
+  session_semantics: "SDK factory creates one environment per session; one active episode per instance"
+  code_execution_enabled: false
   difficulty_levels: [easy, medium, hard]
-
-# ── MCP Tools (6 total) ────────────────────────────────────────────
 tools:
-  - name: read_file
-    cost: 1
-    description: Read source code of a file in the CVE patch
-  - name: search_code
-    cost: 2
-    description: Search for a text pattern across all files in the patch
-  - name: get_function_list
-    cost: 1
-    description: List functions/methods with complexity indicators
-  - name: flag_vulnerable
-    cost: 0
-    description: Flag a file as containing the vulnerability with reasoning
-  - name: skip_file
-    cost: 0
-    description: Mark a file as safe (no vulnerability) with brief reasoning
-  - name: submit_report
-    cost: 0
-    description: Submit final triage report and end the investigation
-
-# ── Reward Function (composite) ────────────────────────────────────
-# Total = 0.50 · env_score  +  0.30 · metacognitive_score  +  0.20 · text_score
+  - {name: read_file, cost: 1, description: "Read generated source in the selected episode"}
+  - {name: search_code, cost: 2, description: "Case-insensitive substring search"}
+  - {name: get_function_list, cost: 1, description: "Extract function-like names with language patterns"}
+  - {name: flag_vulnerable, cost: 0, description: "Record a file flag with bounded reasoning"}
+  - {name: skip_file, cost: 0, description: "Record an unflagged decision with bounded reasoning"}
+  - {name: submit_report, cost: 0, description: "Finalize the research episode and reveal scores"}
+budgets:
+  investigation_points: "2 * file_count"
+  flag_allowance: "min(file_count, max(5, ceil(0.4 * file_count)))"
+  limitation: "Investigation allowance permits one read of every file; no global hard action cap"
 reward:
-  rubric_class: rubrics:ThinkingBudgetRubric   # OpenEnv Rubric hierarchy
-  type: composite
-  formula: "0.50·env_score + 0.30·metacognitive_score + 0.20·text_score"
-  env_components:
-    - name: f1_score
-      weight: 0.35
-      description: Precision × recall on vulnerability detection
-    - name: report_quality
-      weight: 0.20
-      description: CVE ID + vuln type + code-level details mentioned in report
-    - name: investigation_efficiency
-      weight: 0.15
-      description: Strategic use of investigation budget (fewer wasted steps)
-    - name: thinking_efficiency
-      weight: 0.15
-      description: In-environment proxy for selective deep reasoning
-    - name: precision_bonus
-      weight: 0.15
-      description: Extra reward for zero-false-positive flagging
-  metacognitive_components:    # NEW in v3.2 — the paper's contribution
-    - name: calibration
-      weight: 0.50
-      description: |
-        Per <budget_prediction, think> pair: 1.0 iff actual think length ∈
-        predicted band [short:0-80, medium:80-250, long:250+], smooth decay
-        outside.
-    - name: difficulty_awareness
-      weight: 0.50
-      description: |
-        Per <prediction, think, tool_call> triple: 1.0 if (long & file is
-        bug) or (short & file is safe); 0.5 if medium; 0.0 if wrong direction.
-    - name: coupling
-      weight: multiplicative
-      description: |
-        (# predictions followed by a real tool call) / (# predictions).
-        Acts as a 0.5-1.0 multiplier so orphan predictions cannot game
-        the score.
-
-# ── Inference-time enforcement ─────────────────────────────────────
-# scripts/budget_processor.ThinkingBudgetProcessor — a LogitsProcessor
-# that hard-caps <think> tokens per block and per episode at inference.
-inference:
-  budget_processor: scripts.budget_processor:ThinkingBudgetProcessor
-  default_per_block_budget: 400
-  default_episode_budget: 2000
-
-# ── Dataset ────────────────────────────────────────────────────────
+  type: experimental_composite
+  environment_formula: "F1 * (0.35*F1 + 0.20*report_structure + 0.15*step_efficiency + 0.15*reasoning_length_proxy + 0.15*precision_bonus)"
+  metacognitive_formula: "(0.5*length_calibration + 0.5*label_alignment) * (0.5 + 0.5*action_coupling)"
+  note: "Trainer composite and text fallback are separate paths. Historical runs may precede the current reward."
 dataset:
-  source: National Vulnerability Database
+  source: "Synthetic CVE-themed episodes and generated source; not extracted production patches"
   episodes: 150
-  files: 2892
-  features_per_file: [churn, complexity, todo_count, recency]
-  notable_cves:
-    - CVE-2021-44228 (Log4Shell)
-    - CVE-2016-5195 (Dirty COW)
-    - CVE-2021-4034 (PwnKit)
-    - CVE-2019-0708 (BlueKeep)
-    - CVE-2020-1472 (Zerologon)
-
-# ── Held-out transfer eval ─────────────────────────────────────────
-transfer_eval:
-  domain: code-review (non-security)
-  episodes: 5
-  file_count: 56
-  episodes_file: data/transfer_episodes.json
-  expected_results:
-    untrained_f1: 0.28
-    trained_f1: 1.00
-    untrained_thinking_ratio: 1.29
-    trained_thinking_ratio: 5.24
-
-# ── Training ───────────────────────────────────────────────────────
-training:
-  algorithm: GRPO
-  framework:
-    - trl >= 0.17
-    - peft
-    - unsloth
-    - bitsandbytes
-  base_model: Qwen/Qwen3-1.7B
-  base_model_alternatives:  # the same reward shape applies unchanged
-    - Qwen/Qwen3-4B
-    - Qwen/Qwen3-8B
-  precision: bfloat16 (4-bit quantized base + bf16 LoRA)
+  file_rows: 2892
+  unique_source_paths: 2869
+  positive_rows: 319
+  negative_only_episodes: 58
+  split_status: "All bundled data, including training episodes; not held out"
+  canonical_rows: data/cve_training_data.json
+  canonical_snippets: data/code_snippets.json
+benchmark:
+  command: "python benchmark.py"
+  results: grpo_output/benchmark_results.json
+  primary_metric: "Fraction of dataset-positive files actually read; not defect-detection recall"
+  cost_unit: "Source characters returned by bounded reads; not model tokens or money"
+  model_inference: false
+training_artifacts:
+  base_model: Qwen/Qwen2.5-1.5B-Instruct
+  adapter_config: grpo_output/adapter_config.json
+  adapter_weights: grpo_output/adapter_model.safetensors
+  method: GRPO
   lora_rank: 16
   lora_alpha: 32
-  num_episodes: 200            # full dataset, 1 epoch
-  num_train_epochs: 1           # single pass — SFT warmup handles format
-  learning_rate: 5e-6           # 5× higher for visible signal on 1.7B
-  warmup_ratio: 0.05            # fast ramp to full LR
-  grpo_beta: 0.04               # higher KL → smoother curve
-  max_seq_length: 2048
-  max_completion_length: 1024
-  grad_accum_steps: 2
-  metacognitive_reward_weight: 0.30
-  in_training_eval:
-    calibration_log_every: 1   # every reward call logs (pred, len, label)
-    calibration_log_path: grpo_output/eval_calibration.json
-    trace_log_path: grpo_output/trace_log.jsonl
-  live_environment_execution: true
-  notes: |
-    Reward function PARSES tool calls from model outputs and EXECUTES
-    them against the live environment. Ground-truth bug labels are
-    extracted from the active session and passed to the metacognitive
-    reward so the difficulty-awareness component can be scored end-to-end.
-
-# ── Deployment ─────────────────────────────────────────────────────
-deployment:
-  hf_space: lucid987654/code-review-env-v3
-  hf_url: https://huggingface.co/spaces/lucid987654/code-review-env-v3
-  github: https://github.com/subwaycookiecrunch/Meta-final-round-
-  app_entry: app.py
-  sdk: gradio
-  port: 7860
-  tabs:
-    - "🧠 Try The Agent — interactive trajectories"
-    - "📊 The Thinking Budget — hero histogram"
-    - "🎚 Budget Slider — live inference-time compute cap (NEW)"
-    - "📐 Calibration & Transfer — metacog + held-out domain (NEW)"
-    - "🏋️ Training Progress — auto-refresh GRPO logs"
-    - "📖 About — paper, links"
-
-# ── Innovation summary ─────────────────────────────────────────────
-innovation:
-  headline: "Calibrated metacognition as RL — train an LLM to know how hard a problem is BEFORE solving it"
-  novelty: |
-    Process Reward Models score whether reasoning is correct. They do
-    NOT score whether the model knew the difficulty in advance. This
-    auxiliary objective (calibration + difficulty awareness + coupling)
-    plus an inference-time LogitsProcessor produces a closed compute-
-    adaptive loop: shaping during GRPO → policy learns to allocate;
-    budget processor at inference → policy degrades gracefully under
-    arbitrary compute tightening. The learned policy transfers across
-    domains without retraining.
-  adversarial_mechanics:
-    deceptive_files:
-      description: |
-        ~20% of safe files have their features inflated to look
-        suspicious (high churn, high complexity). Heuristic-only
-        policies that threshold on features will flag them incorrectly.
-        The agent must actually READ and REASON about the code.
-      implementation: environment.py — injected at reset() time
-    cost_observability:
-      description: |
-        Every tool response includes a running thinking cost counter.
-        The agent can see how much reasoning budget it has consumed,
-        making budget allocation a real-time strategic decision
-        visible in the observation space.
-      implementation: environment.py — tracking in InvestigationSession.thinking_cost
-  trained_policy_targets:
-    untrained_thinking_ratio: 1.07
-    trained_thinking_ratio:   6.06
-    transfer_thinking_ratio:  5.24    # held-out non-CVE domain
-    calibration_diag_acc:     0.88    # P(actual band == predicted band)
-    p_long_given_bug:         0.92
-    p_long_given_safe:        0.00
-
-# ── Tags (for OpenEnv discovery) ───────────────────────────────────
-tags:
-  - openenv
-  - openenv-mcp
-  - thinking-budget
-  - meta-cognition
-  - calibrated-metacognition
-  - selective-reasoning
-  - reasoning-allocation
-  - compute-adaptive-inference
-  - inference-time-budget
-  - logits-processor
-  - domain-transfer
-  - grpo
-  - qwen3
-  - agentic
-  - tool-use
-  - cve
-  - security
+  recorded_steps: 100
+  evidence_audit_command: "python scripts/audit_training_evidence.py"
+  efficacy_status: "Unproven; recorded action coupling is zero, and most rewards lack environment scores"
+product:
+  entrypoint: app.py
+  engine: review_engine.py
+  local_provider: Ollama
+  default_model: "qwen3:4b"
+  custom_adapter_loaded: false
+  thinking_enabled: false
+  offline_mode: "Explicitly labeled deterministic source rules"
+  tabs: ["Review lab", "Evidence", "Failure lab", "Design decisions"]
+  deployment_status: "Local build only; external publication not performed"
+  safeguards: ["Input bounds", "Output reservations", "Exact source citation checks", "Explicit abstention", "Failure circuit", "Hash-linked audit"]
+tags: [openenv, code-review, resource-allocation, local-inference, source-evidence, grpo-research]

@@ -1,1100 +1,257 @@
-"""
-The Thinking Budget — HuggingFace Space app
-============================================
-Four tabs:
-    1. 🧠 Try The Agent  — interactive replay of recorded trajectories,
-       trained-style vs untrained, side-by-side. THIS IS THE DEMO.
-    2. 📊 The Thinking Budget  — the hero histogram + how the reward shapes it.
-    3. 🏋️ Training Progress  — live, auto-refreshing GRPO logs and curves.
-    4. 📖 About  — project description + theme alignment + links.
-"""
-import gradio as gr
-import os
-import sys
+"""Local review lab. Importing the app never starts training or inference."""
+from __future__ import annotations
+import html
 import json
-import threading
-import subprocess
+import os
+from pathlib import Path
+os.environ.setdefault("GRADIO_ANALYTICS_ENABLED", "False")
+import gradio as gr
+from review_engine import MODEL, ReviewBudget, ollama_status, parse_patch, review_patch, route_file
 
-sys.path.insert(0, os.path.dirname(__file__))
-
-# ── Paths ──────────────────────────────────────────────
-ROOT = os.path.dirname(os.path.abspath(__file__))
-RESULTS_DIR = os.path.join(ROOT, "grpo_output")
-LOG_FILE = os.path.join(RESULTS_DIR, "live_training_logs.txt")
-TRACES_FILE = os.path.join(ROOT, "data", "demo_traces.json")
-THINKING_PNG = os.path.join(RESULTS_DIR, "thinking_allocation.png")
-TRAINING_PNG = os.path.join(RESULTS_DIR, "training_curves.png")
-EVAL_PNG = os.path.join(RESULTS_DIR, "eval_baseline_vs_trained.png")
-CALIBRATION_PNG = os.path.join(RESULTS_DIR, "calibration_plot.png")
-TRANSFER_PNG = os.path.join(RESULTS_DIR, "transfer_results.png")
-TRANSFER_METRICS = os.path.join(RESULTS_DIR, "transfer_metrics.json")
-TRAINING_STATS = os.path.join(RESULTS_DIR, "training_stats.json")
-RED_TEAM_RESULTS = os.path.join(ROOT, "data", "red_team_results.json")
-TRACE_LOG = os.path.join(RESULTS_DIR, "trace_log.jsonl")
-os.makedirs(RESULTS_DIR, exist_ok=True)
-
-# ── Budget-enforcement demo helpers ───────────────────
-try:
-    from scripts.budget_processor import enforce_character_budget
-except Exception:  # pragma: no cover
-    def enforce_character_budget(text, per_block_budget=400, episode_budget=None):
-        return text
+ROOT = Path(__file__).resolve().parent
+RESULTS = ROOT / "grpo_output"
+EXPORTS = ROOT / ".cache" / "reviews"
 
 
-def apply_budget_to_trace(trace, per_block_budget, episode_budget):
-    """Re-render a recorded trace with each <think> block capped at the
-    given budget. Used by the slider demo to show how the policy
-    degrades (or doesn't) under tighter compute caps."""
-    if trace is None:
-        return None
-    new_steps = []
-    for s in trace.get("steps", []):
-        new = dict(s)
-        thinking = (s.get("thinking") or "").strip()
-        if thinking:
-            wrapped = f"<think>{thinking}</think>"
-            capped = enforce_character_budget(
-                wrapped,
-                per_block_budget=per_block_budget,
-                episode_budget=episode_budget,
-            )
-            new["thinking"] = capped.replace("<think>", "").replace("</think>", "")
-        new_steps.append(new)
-    new_trace = dict(trace)
-    new_trace["steps"] = new_steps
-    return new_trace
-
-
-def transfer_metrics_md():
-    if not os.path.exists(TRANSFER_METRICS):
-        return ("_Transfer metrics will appear after training. "
-                "Run `python transfer_eval.py` locally to preview._")
+def load_json(path, default=None):
     try:
-        with open(TRANSFER_METRICS) as f:
-            m = json.load(f)
-    except Exception:
-        return "_Could not load transfer metrics._"
-    lines = [
-        f"### Transfer to **{m['domain']}** — {m['n_episodes']} held-out episodes\n",
-        "| Policy | F1 | Thinking ratio (bug / safe) |",
-        "|---|---:|---:|",
-        f"| Untrained baseline | {m.get('untrained_f1', 0.0):.2f} | {m.get('untrained_thinking_ratio', 1.0):.2f}× |",
-        f"| Simulated trained policy | **{m.get('simulated_f1', m.get('oracle_f1', 0.0)):.2f}** | **{m.get('simulated_thinking_ratio', m.get('oracle_thinking_ratio', 1.0)):.2f}×** |",
-        "",
-        "**The risk-driven allocation heuristic that approximates the trained policy's behavior "
-        "transfers to a different code-review domain without retraining.**",
-        "",
-        "#### Per-task breakdown",
-        "| Task | Untrained F1 | Simulated trained F1 |",
-        "|---|---:|---:|",
-    ]
-    for t in m.get("per_task", []):
-        sim_key = t.get('simulated_f1', t.get('oracle_f1', 0.0))
-        lines.append(
-            f"| {t['title']} | {t['untrained_f1']:.2f} | **{sim_key:.2f}** |"
-        )
-    return "\n".join(lines)
+        return json.loads(Path(path).read_text())
+    except (OSError, ValueError):
+        return default
 
-# ── Red-team results loader ────────────────────────────
-def load_red_team():
-    if not os.path.exists(RED_TEAM_RESULTS):
-        return None
+
+CASES = load_json(ROOT / "examples/review_cases.json", [])
+
+
+def load_case(case_id):
+    case = next((c for c in CASES if c["id"] == case_id), None)
+    if not case:
+        return "", "Paste source below. Files are never executed."
+    return "\n\n".join(f"=== {f['path']} ===\n{f['content'].rstrip()}" for f in case["files"]), case["description"]
+
+
+def model_status_html():
+    s = ollama_status()
+    return f'<div class="runtime"><i class="status-dot {"ready" if s["ready"] else ""}"></i>{html.escape(s["message"])} <span class="mono">{html.escape(MODEL)}</span></div>'
+
+
+def render_plan(text, tokens=2400, max_files=12, input_chars=24000, strategy="adaptive"):
     try:
-        with open(RED_TEAM_RESULTS) as f:
-            return json.load(f)
-    except Exception:
-        return None
+        files = parse_patch(text)
+    except ValueError as exc:
+        return f'<div class="plan-note">{html.escape(str(exc))}</div>'
+    pairs = [(f, route_file(f)) for f in files]
+    if strategy == "adaptive":
+        pairs.sort(key=lambda p: (-p[1]["risk_score"], p[0].path))
+    remaining, used_chars, accepted, bars = int(tokens), 0, 0, []
+    uniform = max(256, int(tokens) // min(len(files), int(max_files)))
+    for f, r in pairs:
+        cap = min(remaining, r["requested_tokens"] if strategy == "adaptive" else uniform)
+        allowed = cap >= 256 and accepted < int(max_files) and used_chars + len(f.content) <= int(input_chars)
+        if allowed:
+            remaining -= cap
+            used_chars += len(f.content)
+            accepted += 1
+        bars.append(f'<div class="allocation-row"><span class="allocation-path">{html.escape(f.path)}</span><div class="bar-track"><i style="width:{min(100, cap / 768 * 100) if allowed else 2}%" class="{r["tier"] if allowed else "deferred"}"></i></div><span class="mono allocation-value">{str(cap) + " max" if allowed else "deferred"}</span></div>')
+    return '<div class="allocation"><div class="eyebrow">OUTPUT ALLOCATION · PREVIEW</div>' + ''.join(bars) + '<p class="plan-note">Worst-case reservation. Unused tokens return to the pool. Routing is deterministic, not learned.</p></div>'
 
 
-def red_team_summary_md():
-    data = load_red_team()
-    if data is None:
-        return (
-            "_Red-team results not found. Run `python scripts/red_team.py` "
-            "to regenerate._"
-        )
-    honest = data["honest_score"]
-    lines = [
-        f"### ✅ All {len(data['attacks']) - 1} attacks scored strictly below "
-        f"the honest policy ({honest:.3f}).",
-        "",
-        "**The reward is empirically hardened against the tested hacking strategies.**",
-        "",
-        f"Combined-reward weights: `env={data['weights']['env']:.2f}` · "
-        f"`metacog={data['weights']['metacog']:.2f}` · "
-        f"`text={data['weights']['text']:.2f}`",
-        "",
-        "| # | Attack | Calib | Diff | Coup | Metacog | Env | Text | "
-        "**Combined** | vs honest |",
-        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|",
-    ]
-    for i, a in enumerate(data["attacks"]):
-        is_honest = (a["name"] == "honest metacognitive")
-        marker = "✅" if is_honest else f"{i+1}"
-        gap = (
-            "—" if is_honest
-            else f"**{a['gap_to_honest_pct']:+.0f}%**"
-        )
-        m = a["metacog"]
-        lines.append(
-            f"| {marker} | {'**' if is_honest else ''}{a['name']}"
-            f"{'**' if is_honest else ''} | "
-            f"{m['calibration']:.2f} | {m['difficulty_awareness']:.2f} | "
-            f"{m['coupling']:.2f} | {m['raw_score']:.2f} | "
-            f"{a['env_reward']:.2f} | {a['text_reward']:.2f} | "
-            f"**{a['combined_reward']:.3f}** | {gap} |"
-        )
+def metric_cards(items):
+    return '<div class="metric-grid">' + ''.join(f'<div class="metric"><span>{a}</span><strong>{b}</strong><small>{c}</small></div>' for a,b,c in items) + '</div>'
+
+
+EMPTY_METRICS = metric_cards([("FINDINGS", "—", "Source-cited candidates"), ("REVIEWED", "—", "Files actually analyzed"), ("OUTPUT TOKENS", "—", "Reported by local model"), ("HUMAN REVIEW", "—", "Unresolved work stays visible")])
+
+
+def render_metrics(report):
+    s,u = report["summary"],report["usage"]
+    output_label = f'{u["output_tokens_reported"]:,}'
+    if u["unknown_usage_calls"]:
+        output_label += ' known'
+    cards = metric_cards([("FINDINGS", str(s["findings"]), "Source-cited candidates"),
+        ("REVIEWED", f'{s["reviewed_files"]}/{s["total_files"]}', "Files actually analyzed"),
+        ("OUTPUT TOKENS", output_label if report["mode"] == "ollama" else "No AI", "Unknown usage charged at full cap" if u["unknown_usage_calls"] else "Provider-reported · not estimated"),
+        ("HUMAN REVIEW", str(s["needs_review"]), "Deferred, failed, or uncertain")])
+    scope = "Local AI review" if report["mode"] == "ollama" else "Offline rules · no model inference"
+    status = "Limits respected" if s["budget_respected"] else "Provider limit violation · stopped"
+    return cards + f'<div class="run-strip">{scope} · {status} · {report["duration_ms"]/1000:.1f}s · <span class="mono">run {report["run_id"]}</span></div>'
+
+
+def render_findings(report):
+    cards=[]
+    for file in report["files"]:
+        for finding in file["findings"]:
+            e={k:html.escape(str(v)) for k,v in finding.items()}
+            cards.append(f'<article class="finding"><div class="finding-top"><span class="severity {e["severity"]}">{e["severity"]}</span><span class="mono">{html.escape(file["path"])}:{e["line"]}</span><span class="evidence-tag">QUOTE VERIFIED</span></div><h3>{e["title"]}</h3><p>{e["explanation"]}</p><pre>{e["quote"]}</pre></article>')
+    if not cards:
+        cards.append('<div class="empty-state"><b>No validated findings in this run.</b><p>Check coverage and unresolved work below. An empty result does not certify safety.</p></div>')
+    unresolved=[f for f in report["files"] if f["status"] in {"deferred","needs_review"}]
+    if unresolved:
+        cards.append('<div class="handoff"><div class="eyebrow">HUMAN REVIEW REQUIRED</div>' + ''.join(f'<p><b>{html.escape(f["path"])}</b><br>{html.escape(f["summary"])}</p>' for f in unresolved) + '</div>')
+    return ''.join(cards)
+
+
+def file_table(report):
+    statuses={"flag":"Finding","no_finding":"No finding","needs_review":"Needs review","deferred":"Deferred"}
+    return [[f["path"],statuses[f["status"]],f["tier"],f["output_cap"] if report["mode"]=="ollama" else 0,f["reported_tokens"],f["source_chars"]," · ".join(f["signals"])] for f in report["files"]]
+
+
+def handoff_markdown(report):
+    lines=["# The Thinking Budget — review handoff", "", f"Run: {report['run_id']} · Mode: {report['mode']} · Model: {report['model']}", f"Patch SHA-256: {report['patch_hash']}", "", "Findings are candidates, not confirmed vulnerabilities. No file is automatically approved.", ""]
+    for file in report["files"]:
+        lines += [f"## {file['path']} — {file['status']}", "", file["summary"], ""]
+        for f in file["findings"]:
+            lines += [f"- Line {f['line']} [{f['severity']}]: {f['title']}", f"  {f['explanation']}", ""]
+    lines += ["## Usage", "", "```json", json.dumps(report["usage"], indent=2), "```", "", "## Limits", ""]
+    lines += [f"- {item}" for item in report["limitations"]]
     return "\n".join(lines)
 
 
-def red_team_attack_choices():
-    data = load_red_team()
-    if data is None:
-        return [], None
-    choices = [(a["name"], a["name"]) for a in data["attacks"]]
-    default = choices[0][1] if choices else None
-    return choices, default
-
-
-def render_red_team_attack(*args):
-    name = args[0] if args else None
-    if not name:
-        return ("_Select an attack from the dropdown above._", "")
-    data = load_red_team()
-    if data is None:
-        return ("_Red-team results not found._",
-                "_Run `python scripts/red_team.py` first._")
-    a = next((x for x in data["attacks"] if x["name"] == name), None)
-    if a is None:
-        return ("_Attack not found._", "")
-    is_honest = a["name"] == "honest metacognitive"
-    head_emoji = "✅" if is_honest else "🛡"
-    summary = [
-        f"### {head_emoji} {a['name']}",
-        "",
-        f"**Strategy:** {a['intent']}",
-        "",
-        f"**Why the reward catches it:** {a['why_it_should_fail']}",
-        "",
-        "| Component | Score |",
-        "|---|---:|",
-        f"| Calibration | {a['metacog']['calibration']:.2f} |",
-        f"| Difficulty awareness | {a['metacog']['difficulty_awareness']:.2f} |",
-        f"| Coupling | {a['metacog']['coupling']:.2f} |",
-        f"| **Metacog (composite)** | **{a['metacog']['raw_score']:.2f}** |",
-        f"| Env reward (live F1) | {a['env_reward']:.2f} |",
-        f"| Text reward | {a['text_reward']:.2f} |",
-        f"| **Combined reward** | **{a['combined_reward']:.3f}** |",
-        f"| **Gap vs honest** | **{a['gap_to_honest_pct']:+.0f}%** |",
-    ]
-    excerpt = a.get("completion_excerpt", "")
-    completion = (
-        "### Attack completion (excerpt)\n\n"
-        f"```\n{excerpt}\n```\n\n"
-        "_Full completions are in `data/red_team_results.json`._"
-    )
-    return "\n".join(summary), completion
-
-
-# ── Trace log loader (live training rollout inspector) ─
-def load_trace_log(limit=200):
-    """Tail the JSONL trace log written by train_grpo.py.  Returns
-    (entries, was_truncated)."""
-    if not os.path.exists(TRACE_LOG):
-        return [], False
+def run_review(text, mode, tokens, max_files, input_chars, strategy, fault, progress=gr.Progress()):
     try:
-        # Cheap tail: read line by line, keep last `limit`.
-        with open(TRACE_LOG) as f:
-            lines = f.readlines()
-    except Exception:
-        return [], False
-    truncated = len(lines) > limit
-    tail = lines[-limit:]
-    out = []
-    for line in tail:
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            out.append(json.loads(line))
-        except Exception:
-            continue
-    return out, truncated
+        files=parse_patch(text)
+        budget=ReviewBudget(output_tokens=int(tokens), max_files=int(max_files), input_chars=int(input_chars))
+    except (ValueError,TypeError) as exc:
+        raise gr.Error(str(exc)) from exc
+    progress(0,desc="Validating source and reserving budget")
+    report=review_patch(files,budget,mode=mode,strategy=strategy,fault=fault,
+        on_progress=lambda r: progress(len(r["files"])/len(files),desc=f'Reviewed {r["files"][-1]["path"]}'))
+    EXPORTS.mkdir(parents=True,exist_ok=True)
+    jp,mp=EXPORTS/f'{report["run_id"]}.json',EXPORTS/f'{report["run_id"]}.md'
+    jp.write_text(json.dumps(report,indent=2,ensure_ascii=False))
+    mp.write_text(handoff_markdown(report))
+    return render_metrics(report),render_findings(report),file_table(report),report,str(jp),str(mp)
 
 
-def trace_log_summary_md():
-    entries, truncated = load_trace_log(limit=2000)
-    if not entries:
-        return (
-            "_No `trace_log.jsonl` yet._  This file streams a record of every "
-            "reward call during GRPO training. It will populate live as the "
-            "trainer runs on the Space — refresh this tab. Once training has "
-            "logged a few hundred rollouts you'll see distribution stats here."
-        )
-    finals = [e.get("final", 0.0) for e in entries]
-    metacogs = [e.get("metacog_score", 0.0) for e in entries]
-    envs = [e.get("env_score") for e in entries if e.get("env_score") is not None]
-    n = len(finals)
-    mean_final = sum(finals) / max(1, n)
-    max_final = max(finals)
-    min_final = min(finals)
-    mean_metacog = sum(metacogs) / max(1, n)
-    mean_env = (sum(envs) / max(1, len(envs))) if envs else 0.0
-
-    # Bucket by final reward
-    buckets = {"0.00–0.20": 0, "0.20–0.40": 0, "0.40–0.60": 0,
-               "0.60–0.80": 0, "0.80–1.00": 0}
-    for f in finals:
-        if f < 0.20:   buckets["0.00–0.20"] += 1
-        elif f < 0.40: buckets["0.20–0.40"] += 1
-        elif f < 0.60: buckets["0.40–0.60"] += 1
-        elif f < 0.80: buckets["0.60–0.80"] += 1
-        else:          buckets["0.80–1.00"] += 1
-
-    lines = [
-        f"### {n:,} reward calls logged" + (" (showing latest 2,000)" if truncated else ""),
-        "",
-        "| Metric | Value |",
-        "|---|---:|",
-        f"| Mean final reward | **{mean_final:.3f}** |",
-        f"| Max final reward | {max_final:.3f} |",
-        f"| Min final reward | {min_final:.3f} |",
-        f"| Mean metacog score | {mean_metacog:.3f} |",
-        f"| Mean env score (when live exec succeeded) | {mean_env:.3f} |",
-        "",
-        "#### Final-reward distribution (last 2,000 calls)",
-        "",
-        "| Bucket | Count | Bar |",
-        "|---|---:|---|",
-    ]
-    max_count = max(buckets.values()) or 1
-    for b, c in buckets.items():
-        bar = "█" * int(40 * c / max_count)
-        lines.append(f"| {b} | {c} | `{bar}` |")
-    return "\n".join(lines)
+def benchmark_md():
+    d=load_json(RESULTS/"benchmark_results.json")
+    if not d:
+        return "Run `python benchmark.py` to generate prioritization evidence."
+    lines=[f'### {d["dataset"]["episodes"]} episodes. Every file counted.', '', 'Executed deterministic prioritization on synthetic data. **Coverage measures positive-labeled files read, not defects detected.** These are not LLM results.', '', '| Policy at 50% read allowance | Files read | Positive-file coverage | Missed positives | Safe files read |','|---|---:|---:|---:|---:|']
+    for r in d["policies"]:
+        if r["feature_condition"]=="original_features" and (r["budget_fraction"]==.5 or r["policy"]=="exhaustive"):
+            ci=r["coverage_recall_ci95"]
+            lines.append(f'| {r["policy"].replace("_"," ")} | {r["reads_used"]:,} | {r["coverage_recall"]:.1%} ({ci[0]:.1%}–{ci[1]:.1%}) | {r["missed_positives"]} | {r["safe_reviews"]} |')
+    lines += ['', '**Limits:** synthetic features may encode dataset construction; some snippets do not faithfully implement the labeled defect. All bundled episodes include training data. Shuffled features test dependence on those signals.', '', 'Reproduce: `python benchmark.py` · Row-level audit: `grpo_output/benchmark_episodes.jsonl`']
+    return '\n'.join(lines)
 
 
-def trace_log_recent_table_md(n=20):
-    entries, _ = load_trace_log(limit=n * 2)
-    if not entries:
-        return "_No entries yet._"
-    recent = entries[-n:][::-1]  # newest first
-    lines = [
-        f"### Latest {len(recent)} rollouts (newest first)",
-        "",
-        "| # | env | metacog | text→ | calib | diff | coup | preds | bugs | **final** |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
-    ]
-    for i, e in enumerate(recent, 1):
-        env = e.get("env_score")
-        env_s = f"{env:.2f}" if env is not None else "–"
-        m = e.get("metacog") or {}
-        cal = f"{m.get('calibration', 0):.2f}" if m else "–"
-        diff_ = f"{m.get('difficulty_awareness', 0):.2f}" if m else "–"
-        coup = f"{m.get('coupling', 0):.2f}" if m else "–"
-        n_preds = m.get("n_predictions", 0) if m else 0
-        text_s = f"{e.get('text_score', 0):.2f}"
-        meta_s = f"{e.get('metacog_score', 0):.2f}"
-        bugs = e.get("n_bug_files", 0)
-        final = e.get("final", 0.0)
-        lines.append(
-            f"| {i} | {env_s} | {meta_s} | {text_s} | {cal} | "
-            f"{diff_} | {coup} | {n_preds} | {bugs} | **{final:.3f}** |"
-        )
-    lines.append("")
-    lines.append(
-        "_Columns: `env`=live MCP env F1 score · `metacog`=composite metacog "
-        "reward · `text`=text-shape heuristic reward · `calib/diff/coup` = "
-        "metacog sub-scores · `preds`=number of `<budget_prediction>` tags emitted "
-        "· `bugs`=ground-truth vulnerable files in the episode · "
-        "`final`=combined reward signal seen by GRPO._"
-    )
-    return "\n".join(lines)
+def live_evidence_md():
+    r=load_json(RESULTS/"live_review_checkout.json")
+    if not r or r.get("mode")!="ollama":
+        return 'No captured model run yet. Use **Review lab → Local AI** to create real inference evidence.'
+    s,u=r["summary"],r["usage"]
+    return f'### Captured local model run\n\n**{r["model"]}**, pretrained; no project fine-tuning. Checkout fixture: **{s["reviewed_files"]}/{s["total_files"]} files reviewed**, **{s["findings"]} validated finding candidates**, **{s["needs_review"]} unresolved files**.\n\nProvider reported **{u["output_tokens_reported"]:,} output tokens**, **{u["input_tokens_reported"]:,} input tokens**; wall time **{r["duration_ms"]/1000:.1f}s**. A small synthetic fixture demonstrates execution, not production accuracy or RL gains.\n\nA valid quote proves the cited line exists, not that the interpretation is correct.'
 
 
-# ── Demo trace loader ──────────────────────────────────
-def load_traces():
-    if not os.path.exists(TRACES_FILE):
-        return []
-    try:
-        with open(TRACES_FILE) as f:
-            return json.load(f)
-    except Exception as e:
-        print(f"Failed to load traces: {e}")
-        return []
+def run_failure_lab(kind):
+    source,_=load_case("checkout")
+    r=review_patch(parse_patch(source),mode="offline",fault=kind)
+    return render_metrics(r),render_findings(r),r
 
 
-TRACES = load_traces()
-
-
-def trace_index_by_cve(cve_id, policy):
-    for i, t in enumerate(TRACES):
-        if t["cve_id"] == cve_id and t["policy"] == policy:
-            return i
-    return None
-
-
-def cve_dropdown_choices():
-    seen = []
-    out = []
-    for t in TRACES:
-        if t["cve_id"] in seen:
-            continue
-        seen.append(t["cve_id"])
-        n_files = len(t["files"])
-        n_bugs = len(t["bugs"])
-        out.append((f"{t['cve_id']}  ·  {t['level']}  ·  "
-                    f"{n_files} files / {n_bugs} bug(s)  ·  "
-                    f"CVSS {t['cvss']:.1f}",
-                    t["cve_id"]))
-    return out
-
-
-# ── Render a single step nicely ────────────────────────
-def render_step(step, step_num, total_steps):
-    """Format one step (think + action + response) as Markdown."""
-    action = step["action"]
-    args = step.get("args", {})
-    response = (step.get("response") or "").strip()
-    thinking = (step.get("thinking") or "").strip()
-
-    # Color/icon per action
-    icon = {
-        "read_file": "📄",
-        "search_code": "🔎",
-        "get_function_list": "🧩",
-        "flag_vulnerable": "🚩",
-        "skip_file": "✅",
-        "submit_report": "📝",
-    }.get(action, "•")
-
-    args_str = json.dumps(args, indent=2) if args else "{}"
-
-    md = [f"### Step {step_num}/{total_steps}  {icon}  `{action}`"]
-    if thinking:
-        thinking_chars = len(thinking)
-        depth = "🧠 deep" if thinking_chars > 100 else "💭 brief"
-        md.append(f"**{depth} reasoning ({thinking_chars} chars):**")
-        md.append(f"> {thinking}")
-        md.append("")
-    md.append("**Tool call:**")
-    md.append(f"```json\n{args_str}\n```")
-    if response:
-        md.append("**Environment response:**")
-        truncated = response[:1000] + ("…" if len(response) > 1000 else "")
-        md.append(f"```\n{truncated}\n```")
-    return "\n".join(md)
-
-
-def render_full_trace(trace):
-    """Render the full trace as one long Markdown document."""
-    if trace is None:
-        return "_No trace loaded._"
-    steps = trace.get("steps", [])
-    total = len(steps)
-    parts = [f"_Showing {total} steps._\n"]
-    for i, s in enumerate(steps, 1):
-        parts.append(render_step(s, i, total))
-        parts.append("---")
-    return "\n\n".join(parts)
-
-
-def trace_summary(trace):
-    if trace is None:
-        return ""
-    m = trace["metrics"]
-    return (
-        f"**CVE:** {trace['cve_id']}  ·  **CVSS:** {trace['cvss']:.1f}  ·  "
-        f"**Difficulty:** {trace['level']}\n\n"
-        f"**Description:** {trace['cve_description'][:300]}…\n\n"
-        f"### Score for this trajectory\n"
-        f"- F1: **{m['f1']:.2f}**  (precision {m['precision']:.2f}, recall {m['recall']:.2f})\n"
-        f"- Total reward: **{m['total_score']:.3f}** / 1.000\n"
-        f"- Thinking efficiency: **{m['thinking_efficiency']:.2f}** / 1.00\n"
-        f"- Files flagged: {len(trace['flagged'])}  ·  "
-        f"Files skipped: {len(trace['skipped'])}  ·  "
-        f"True bugs: {len(trace['bugs'])}\n"
-    )
-
-
-def run_demo(*args):
-    """Render both untrained and trained traces side-by-side for a chosen CVE.
-    Uses *args to survive Gradio SSR which may call with 0 inputs."""
-    cve_id = args[0] if args else None
-    if not TRACES:
-        msg = "_No demo traces found. Run `python scripts/record_demo_traces.py` first._"
-        return msg, msg, "", ""
-    if not cve_id:
-        # SSR called with no inputs — use first available trace
-        cve_id = TRACES[0]["cve_id"] if TRACES else None
-    if not cve_id:
-        return "_No CVE selected._", "_No CVE selected._", "", ""
-    untrained = next((t for t in TRACES if t["cve_id"] == cve_id and t["policy"] == "untrained"), None)
-    trained = next((t for t in TRACES if t["cve_id"] == cve_id and t["policy"] == "trained"), None)
-    return (
-        render_full_trace(untrained),
-        render_full_trace(trained),
-        trace_summary(untrained),
-        trace_summary(trained),
-    )
-
-
-# ── Training progress (existing) ───────────────────────
-def load_logs():
-    if os.path.exists(LOG_FILE):
-        try:
-            with open(LOG_FILE) as f:
-                return f.read()
-        except Exception:
-            return "Error reading logs."
-    return "⏸️ Ready to Train. Waiting for boot..."
-
-
-def save_logs(text):
-    try:
-        with open(LOG_FILE, "w") as f:
-            f.write(text)
-    except Exception:
-        pass
-
-
-training_status = {
-    "running": False,
-    "progress": load_logs(),
-    "done": os.path.exists(TRAINING_STATS),
-}
-
-
-def run_training():
-    training_status["running"] = True
-    training_status["done"] = False
-
-    sft_data = os.path.join(ROOT, "data", "sft_demonstrations.json")
-    sft_adapter = os.path.join(RESULTS_DIR, "sft_adapter")
-    sft_script = os.path.join(ROOT, "train_sft_warmup.py")
-
-    # ── Phase 1: SFT warmup (if data exists and adapter doesn't) ──
-    if (os.path.exists(sft_data) and os.path.exists(sft_script)
-            and not os.path.exists(sft_adapter)):
-        training_status["progress"] = "🔄 Phase 1/2: SFT warmup (teaching output format)..."
-        save_logs(training_status["progress"])
-        try:
-            proc = subprocess.Popen(
-                [sys.executable, "train_sft_warmup.py"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-                cwd=ROOT,
-            )
-            lines = []
-            for line in proc.stdout:
-                lines.append(line.strip())
-                training_status["progress"] = "Phase 1/2 SFT:\n" + "\n".join(lines[-25:])
-                save_logs(training_status["progress"])
-                print(line.strip())
-            exit_code = proc.wait()
-            if exit_code != 0:
-                tail = "\n".join(lines[-15:])
-                training_status["progress"] = (
-                    f"⚠️ SFT warmup failed (exit {exit_code}), continuing with base model.\n{tail}"
-                )
-                save_logs(training_status["progress"])
-        except Exception as e:
-            training_status["progress"] = f"⚠️ SFT warmup error: {e}. Continuing with base model."
-            save_logs(training_status["progress"])
-
-    # ── Phase 2: GRPO ────────────────────────────────────────────
-    training_status["progress"] = "🚀 Phase 2/2: GRPO training (policy learning)..."
-    save_logs(training_status["progress"])
-
-    try:
-        env = os.environ.copy()
-        # If SFT adapter exists, tell GRPO to load it + use optimized
-        # hyperparams for the post-SFT regime (the model already knows
-        # the output format, so we can train faster and with higher LR)
-        sft_weights = os.path.join(sft_adapter, "adapter_model.safetensors")
-        if os.path.exists(sft_weights):
-            env["ADAPTER_PATH"] = sft_adapter
-            env["NUM_EPISODES"] = "200"
-            env["NUM_TRAIN_EPOCHS"] = "1"
-            env["LEARNING_RATE"] = "5e-6"
-            env["GRAD_ACCUM_STEPS"] = "2"
-            print(f"📋 GRPO will load SFT adapter from {sft_adapter}")
-            print(f"📋 Using post-SFT hyperparams: 200 eps, 1 epoch, lr=5e-6")
-
-        proc = subprocess.Popen(
-            [sys.executable, "train_grpo.py"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,
-            cwd=ROOT,
-            env=env,
-        )
-        lines = []
-        for line in proc.stdout:
-            lines.append(line.strip())
-            training_status["progress"] = "\n".join(lines[-30:])
-            save_logs(training_status["progress"])
-            print(line.strip())
-
-        exit_code = proc.wait()
-        if exit_code == 0 and os.path.exists(TRAINING_STATS):
-            training_status["done"] = True
-            training_status["progress"] = "✅ Training Complete!"
-
-            # ── Post-training: run transfer eval with real model ──
-            transfer_script = os.path.join(ROOT, "scripts", "run_transfer_inference.py")
-            if os.path.exists(transfer_script):
-                training_status["progress"] = "🔬 Running transfer eval with trained adapter..."
-                save_logs(training_status["progress"])
-                try:
-                    tproc = subprocess.Popen(
-                        [sys.executable, transfer_script],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,
-                        text=True, bufsize=1, cwd=ROOT,
-                    )
-                    for tline in tproc.stdout:
-                        print(tline.strip())
-                    tproc.wait()
-                    training_status["progress"] = "✅ Training + Transfer Eval Complete!"
-                except Exception as te:
-                    print(f"⚠️ Transfer eval failed: {te}")
-                    training_status["progress"] = "✅ Training Complete! (transfer eval skipped)"
-
-            # ── Post-training: before/after comparison ──
-            baseline_script = os.path.join(ROOT, "eval_baseline.py")
-            if os.path.exists(baseline_script):
-                training_status["progress"] = "📊 Running baseline vs trained comparison..."
-                save_logs(training_status["progress"])
-                try:
-                    bproc = subprocess.Popen(
-                        [sys.executable, baseline_script],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,
-                        text=True, bufsize=1, cwd=ROOT,
-                    )
-                    for bline in bproc.stdout:
-                        print(bline.strip())
-                    bproc.wait()
-                    training_status["progress"] = "✅ All evaluations complete!"
-                except Exception as be:
-                    print(f"⚠️ Baseline eval failed: {be}")
-                    training_status["progress"] = "✅ Training Complete! (baseline eval skipped)"
-        else:
-            training_status["done"] = False
-            tail = "\n".join(lines[-20:])
-            training_status["progress"] = (
-                f"❌ Training FAILED (Exit {exit_code}).\n\nRecent output:\n{tail}"
-            )
-        save_logs(training_status["progress"])
-    except Exception as e:
-        training_status["progress"] = f"❌ CRITICAL ERROR: {str(e)}"
-        save_logs(training_status["progress"])
-    finally:
-        training_status["running"] = False
-
-
-def start_training_btn():
-    if training_status["running"]:
-        return "⚠️ Already running!"
-    training_status["done"] = False
-    threading.Thread(target=run_training, daemon=True).start()
-    return "🚀 Manually started. Watch the logs below."
-
-
-# ── UI ─────────────────────────────────────────────────
-HEADLINE_MD = """
-# 🧠 The Thinking Budget
-### A reasoning model that knows how hard a problem is — *before* it solves it.
-*Calibrated metacognition as reinforcement learning.*
-
-> Standard reasoning RL treats `<think>` as a black box. **We open it.** The agent
-> emits `<budget_prediction>short|medium|long</budget_prediction>` before every
-> reasoning block and is jointly rewarded for **calibration**, **difficulty
-> awareness**, and **action coupling** — three orthogonal signals that, adversarially,
-> none can be hacked without sacrificing another.
-
-| Metric | Untrained baseline | Metacognitive policy |
-|---|---:|---:|
-| Avg `<think>` chars on **buggy** files | 176 | **473** |
-| Avg `<think>` chars on **safe** files | 165 | **78** |
-| Thinking-allocation ratio (bug / safe) | 1.07× | **6.06×** |
-| Calibration confusion-diagonal | 0.33 (random) | **0.88** |
-| `P(long \\| buggy)` | ~0.33 | **0.92** |
-| Transfer F1 to held-out non-CVE domain | 0.28 | **1.00** |
-| Adversarial robustness (best red-team attack) | — | **−22% gap** |
-
-— Razorpay AI Buildathon 2026 · Open Track · [Paper](PAPER.md) · [Safeguards](SAFEGUARDS.md) · [Judges Checklist](JUDGES.md)
-"""
-
-
-with gr.Blocks(title="The Thinking Budget") as app:
-    gr.Markdown(HEADLINE_MD)
-
+THEME=gr.themes.Base(primary_hue="teal",secondary_hue="slate",neutral_hue="slate",font=["Inter","ui-sans-serif","system-ui"],font_mono=["ui-monospace","monospace"])
+# Keep our light product palette consistent even when the OS requests dark mode.
+_palette=THEME.to_dict()["theme"]
+THEME.set(**{key:_palette[key[:-5]] for key in _palette if key.endswith("_dark") and key[:-5] in _palette})
+with gr.Blocks(title="The Thinking Budget · Review Lab",analytics_enabled=False) as app:
+    gr.HTML('''<div class="masthead"><div class="brand"><span class="brand-mark">tb</span> THE THINKING BUDGET</div><div class="edition">OPEN TRACK / BUILD 01</div></div><section class="hero"><div class="eyebrow">CODE REVIEW, WITH A COMPUTE BUDGET</div><h1>Spend compute where<br><em>failure costs more.</em></h1><p>Prioritize a patch. Let local AI inspect the risky files. Keep every limit,<br class="desktop-break"> finding, and unfinished review visible.</p><div class="hero-tags"><span>Local inference</span><span>Source-cited findings</span><span>Explicit human handoff</span></div></section>''')
+    runtime=gr.HTML('<div class="runtime">Checking local model availability…</div>')
     with gr.Tabs():
-        # ╭─────────────────────────────────────────────╮
-        # │  Tab 1 — Try The Agent                       │
-        # ╰─────────────────────────────────────────────╯
-        with gr.Tab("🧠 Try The Agent"):
-            gr.Markdown(
-                "### Pick a real CVE. Watch the untrained baseline (left) and the "
-                "trained-policy investigator (right) work the same case.\n\n"
-                "Each step shows the agent's `<think>` reasoning, the tool call, "
-                "and the live environment response. **Look at how thinking length "
-                "differs between the two policies on the same files.**\n\n"
-                "_Trajectories were recorded by running the live `CodeReviewEnvironment`. "
-                "Tool calls, env responses, and ground-truth labels are real. Reasoning "
-                "text is from the policy: random for untrained, risk-driven for trained "
-                "(as a stand-in until real GRPO traces replace them post-training)._"
-            )
-
-            cve_choices = cve_dropdown_choices()
-            default_cve = cve_choices[0][1] if cve_choices else None
-            init_u, init_t, init_us, init_ts = (
-                run_demo(default_cve) if default_cve else ("", "", "", "")
-            )
-
-            cve_picker = gr.Dropdown(
-                choices=cve_choices,
-                value=default_cve,
-                label="Choose a CVE to investigate",
-                interactive=True,
-            )
-
+        with gr.Tab("Review lab"):
+            with gr.Row(equal_height=False):
+                with gr.Column(scale=5,min_width=340):
+                    gr.Markdown("### 01 / Load a patch")
+                    picker=gr.Dropdown(choices=[(c["title"],c["id"]) for c in CASES],value="checkout",label="Sample case")
+                    initial_source,initial_description=load_case("checkout")
+                    case_description=gr.Markdown(initial_description,elem_classes=["subtle"])
+                    source_input=gr.Textbox(value=initial_source,label="Source files · editable",lines=15,max_lines=25,elem_id="source-editor")
+                    gr.Markdown("File blocks: `=== path/to/file.py ===`, or JSON with `path` and `content`. Source is never executed.",elem_classes=["subtle"])
+                with gr.Column(scale=4,min_width=320):
+                    gr.Markdown("### 02 / Set your limits")
+                    mode=gr.Radio(choices=[("Local AI · Qwen","ollama"),("Offline · static rules","offline")],value="ollama",label="Reviewer")
+                    tokens=gr.Slider(256,8192,value=2400,step=128,label="Total output-token allowance",info="Enforced per request. Input characters have a separate cap.")
+                    with gr.Row():
+                        max_files=gr.Slider(1,24,value=12,step=1,label="Max files to review")
+                        input_chars=gr.Slider(512,80000,value=24000,step=512,label="Source-character allowance")
+                    strategy=gr.Radio(choices=[("Risk-prioritized","adaptive"),("Uniform · input order","uniform")],value="adaptive",label="Allocation strategy")
+                    allocation=gr.HTML(render_plan(initial_source))
+                    with gr.Accordion("Inject a failure",open=False):
+                        fault=gr.Radio(choices=[("None","none"),("Timeout once","timeout"),("Bad JSON once","malformed"),("False citation once","evidence")],value="none",label="First review only · explicitly simulated")
+                    run_button=gr.Button("Review this patch  →",variant="primary",size="lg")
+                    gr.Markdown("No AI available? Choose offline rules. Model failures never silently become successful AI reviews.",elem_classes=["subtle"])
+            gr.HTML('<div class="section-divider"><span>03 / REVIEW RESULTS</span><span>Evidence first. Human decision last.</span></div>')
+            metrics=gr.HTML(EMPTY_METRICS)
+            findings=gr.HTML('<div class="empty-state"><b>Your review starts here.</b><p>Load a patch, set a budget, and run. Actual findings and unresolved work appear here.</p></div>')
+            coverage=gr.Dataframe(headers=["File","Outcome","Allocation","Output cap","Actual output tokens","Source chars","Routing signals"],datatype=["str","str","str","number","number","number","str"],interactive=False,label="File coverage · no silent skips",wrap=True)
             with gr.Row():
-                untrained_summary = gr.Markdown(value=init_us)
-                trained_summary = gr.Markdown(value=init_ts)
+                json_download=gr.File(label="Complete audit · JSON",interactive=False)
+                md_download=gr.File(label="Reviewer handoff · Markdown",interactive=False)
+            with gr.Accordion("Inspect the hash-linked audit",open=False):
+                audit=gr.JSON(label="Usage, failures, evidence and routing")
+                gr.Markdown("Hashes detect changes relative to a retained record. This is not a signed external audit log.",elem_classes=["subtle"])
+            picker.change(load_case,[picker],[source_input,case_description])
+            for control in (source_input,tokens,max_files,input_chars,strategy):
+                control.change(render_plan,[source_input,tokens,max_files,input_chars,strategy],[allocation])
+            run_button.click(run_review,[source_input,mode,tokens,max_files,input_chars,strategy,fault],[metrics,findings,coverage,audit,json_download,md_download],concurrency_limit=1,concurrency_id="model_review",api_name="review_patch")
+        with gr.Tab("Evidence"):
+            gr.Markdown("## Show the work, including the limits\n\nActual model execution and deterministic prioritization are separate evidence types.")
+            captured=gr.Markdown(live_evidence_md())
+            gr.Button("Refresh captured evidence",size="sm").click(live_evidence_md,outputs=[captured])
+            gr.Markdown(benchmark_md())
+            figure=RESULTS/"benchmark_pareto.png"
+            gr.Image(value=str(figure) if figure.exists() else None,label="Coverage vs file-read allowance · heuristic experiment")
+            with gr.Accordion("What the old numbers cannot prove",open=False):
+                gr.Markdown("Original 6× thinking ratio, perfect F1, calibration charts, and tag-removal ablations used scripted or label-dependent behavior. They do not prove trained-model improvement. Truncating a saved trace does not rerun a model. These claims are excluded from submission evidence. See `docs/BRUTAL_ASSESSMENT.md`.")
+        with gr.Tab("Failure lab"):
+            gr.Markdown("## Break the review. Keep the boundary.\n\nInject one failure. The file stays open for human review; the run continues within limits. This drill uses deterministic rules and simulated failures, with no model call.")
+            failure_kind=gr.Radio(choices=[("Provider timeout","timeout"),("Malformed JSON","malformed"),("Invented source citation","evidence")],value="evidence",label="Failure scenario")
+            break_button=gr.Button("Run failure drill  →",variant="primary")
+            fail_metrics,fail_findings=gr.HTML(EMPTY_METRICS),gr.HTML()
+            fail_audit=gr.JSON(label="Failure drill audit")
+            break_button.click(run_failure_lab,[failure_kind],[fail_metrics,fail_findings,fail_audit])
+        with gr.Tab("Design decisions"):
+            gr.Markdown('''## AI analyzes. Code enforces.
 
-            with gr.Row():
-                with gr.Column():
-                    gr.Markdown("## 🤖 Untrained Qwen3-1.7B")
-                    untrained_render = gr.Markdown(value=init_u, height=600)
-                with gr.Column():
-                    gr.Markdown("## 🧠 Trained Policy (GRPO)")
-                    trained_render = gr.Markdown(value=init_t, height=600)
+| Responsibility | Choice | Reason |
+|---|---|---|
+| Find semantic defects | Local pretrained Qwen | Retries, ownership and trust boundaries need context |
+| Prioritize files | Visible deterministic signals | Cheap, inspectable, never given answer labels |
+| Limit generation | Output cap + conservative usage ledger | Unknown usage consumes the full reservation |
+| Validate findings | Structured output + exact line/quote match | Invalid evidence cannot become an accepted finding |
+| Recover | Explicit human handoff; circuit after repeated failures | Uncertainty stays visible |
+| Approve a patch | Human reviewer | No output can certify arbitrary code as safe |
 
-            cve_picker.change(
-                run_demo,
-                inputs=[cve_picker],
-                outputs=[untrained_render, trained_render,
-                         untrained_summary, trained_summary],
-            )
+### Research path, clearly separated
 
-        # ╭─────────────────────────────────────────────╮
-        # │  Tab 2 — The Thinking Budget                │
-        # ╰─────────────────────────────────────────────╯
-        with gr.Tab("📊 The Thinking Budget"):
-            gr.Markdown(
-                "### The hero plot — does the agent reason where it matters?\n\n"
-                "Two histograms over `<think>`-block character counts, separated by "
-                "ground-truth label (vulnerable vs safe files). The trained policy "
-                "should concentrate deep reasoning on bugs and stay brief on safe "
-                "files. The dashed lines mark per-class means; the title shows the "
-                "**deep-thinking ratio** (bug / safe)."
-            )
-            gr.Image(
-                value=THINKING_PNG if os.path.exists(THINKING_PNG) else None,
-                label="thinking_allocation.png",
-                show_label=False,
-            )
-            gr.Markdown(
-                "### How the reward shapes this\n\n"
-                "Of the 5 reward components, the **🧠 thinking efficiency** term "
-                "(15% weight) is the one that produces the right panel:\n\n"
-                "```\n"
-                "deep_thinks_on_bugs   = count(<think> > 100 chars on actual bugs)\n"
-                "deep_thinks_on_clean  = count(<think> > 100 chars on safe files)\n"
-                "bug_coverage   = deep_thinks_on_bugs / total_bugs\n"
-                "waste_penalty  = deep_thinks_on_clean / total_decisions\n"
-                "thinking_score = max(0, bug_coverage − 0.5 × waste_penalty)\n"
-                "```\n\n"
-                "An agent that uniformly thinks deeply gets 0.5× of `waste_penalty` "
-                "applied. An agent that doesn't think on bugs misses `bug_coverage` "
-                "credit. The only optimum is selective deep reasoning."
-            )
+The repository also contains an OpenEnv environment, experimental metacognitive rewards,
+SFT/GRPO scripts, and a token-budget processor. A Qwen2.5-1.5B LoRA checkpoint and 100-step
+training logs are supplied. The audit found zero action coupling in 200 saved reward traces.
+Training happened; useful learned allocation has not been established. The live product uses
+a separate pretrained model and deterministic routing.
 
-        # ╭─────────────────────────────────────────────╮
-        # │  Tab 3 — Budget Slider (live compute cap)   │
-        # ╰─────────────────────────────────────────────╯
-        with gr.Tab("🎚 Budget Slider"):
-            gr.Markdown(
-                "### Hard cap the agent's compute, watch the policy adapt.\n\n"
-                "Move the slider to set a per-`<think>`-block character budget. "
-                "The same recorded trajectory is re-rendered with the budget "
-                "enforced — anything past the cap is truncated.  A trained "
-                "metacognitive policy *plans for* tight budgets and front-loads "
-                "the most diagnostic reasoning; an untrained model just gets "
-                "cut off mid-sentence.\n\n"
-                "_Implementation: `scripts/budget_processor.ThinkingBudgetProcessor` "
-                "is a `LogitsProcessor` that forces `</think>` when the per-block "
-                "budget runs out at inference time. This tab shows the offline "
-                "character-level analogue applied to recorded traces — the live "
-                "version runs against the trained adapter once it lands._"
-            )
+### What broke
 
-            cve_bs = cve_dropdown_choices()
-            default_bs = cve_bs[0][1] if cve_bs else None
+The audit found label leakage during decisions, missing observations over HTTP,
+unrestricted inherited execution, and simulated metrics presented as learned behavior.
+These failures drove separation between source, labels, inference, controls, and evidence.
 
-            with gr.Row():
-                budget_cve = gr.Dropdown(
-                    choices=cve_bs, value=default_bs,
-                    label="CVE", interactive=True,
-                )
-                budget_slider = gr.Slider(
-                    minimum=40, maximum=600, step=20, value=400,
-                    label="Per-block thinking budget (characters)",
-                )
+### Run locally
 
-            with gr.Row():
-                budget_summary_u = gr.Markdown()
-                budget_summary_t = gr.Markdown()
+```bash
+python -m pip install -r requirements.txt
+ollama pull qwen3:4b
+python app.py
+python -m pytest tests -q
+python benchmark.py
+```
 
-            with gr.Row():
-                with gr.Column():
-                    gr.Markdown("## 🤖 Untrained Qwen3-1.7B (under budget)")
-                    budget_render_u = gr.Markdown(height=550)
-                with gr.Column():
-                    gr.Markdown("## 🧠 Metacognitive policy (under budget)")
-                    budget_render_t = gr.Markdown(height=550)
-
-            def run_budget_demo(cve_id, per_block):
-                if not TRACES:
-                    msg = "_No demo traces. Run `python scripts/record_demo_traces.py`._"
-                    return msg, msg, "", ""
-                untrained = next((t for t in TRACES
-                                  if t["cve_id"] == cve_id and t["policy"] == "untrained"), None)
-                trained = next((t for t in TRACES
-                                if t["cve_id"] == cve_id and t["policy"] == "trained"), None)
-                u_b = apply_budget_to_trace(untrained, int(per_block), None)
-                t_b = apply_budget_to_trace(trained, int(per_block), None)
-                return (
-                    render_full_trace(u_b),
-                    render_full_trace(t_b),
-                    trace_summary(u_b),
-                    trace_summary(t_b),
-                )
-
-            if default_bs:
-                _u, _t, _us, _ts = run_budget_demo(default_bs, 400)
-                budget_render_u.value = _u
-                budget_render_t.value = _t
-                budget_summary_u.value = _us
-                budget_summary_t.value = _ts
-
-            budget_cve.change(
-                run_budget_demo,
-                inputs=[budget_cve, budget_slider],
-                outputs=[budget_render_u, budget_render_t,
-                         budget_summary_u, budget_summary_t],
-            )
-            budget_slider.change(
-                run_budget_demo,
-                inputs=[budget_cve, budget_slider],
-                outputs=[budget_render_u, budget_render_t,
-                         budget_summary_u, budget_summary_t],
-            )
-
-        # ╭─────────────────────────────────────────────╮
-        # │  Tab 4 — Calibration & Transfer             │
-        # ╰─────────────────────────────────────────────╯
-        with gr.Tab("📐 Calibration & Transfer"):
-            gr.Markdown(
-                "### Metacognitive Calibration\n\n"
-                "Before each `<think>` block, the policy emits "
-                "`<budget_prediction>short|medium|long</budget_prediction>`. "
-                "The reward function then scores **calibration** "
-                "(does actual length match the predicted band?), **difficulty "
-                "awareness** (long predictions land on bugs, short on safe "
-                "files?), and **coupling** (every prediction tied to a real "
-                "tool call?). The plot below tracks all three on held-out "
-                "evaluation episodes."
-            )
-            gr.Image(
-                value=CALIBRATION_PNG if os.path.exists(CALIBRATION_PNG) else None,
-                label="calibration_plot.png",
-                show_label=False,
-            )
-            gr.Markdown(
-                "**Read the plot:**\n"
-                "- *Panel A* — confusion matrix of predicted vs actual band. "
-                "  Diagonal = perfectly calibrated.\n"
-                "- *Panel B* — `|actual − band-midpoint|` distribution. "
-                "  Lower median = tighter calibration.\n"
-                "- *Panel C* — who gets the `long` label? Concentration on the "
-                "  buggy bar (right side) is the metacognitive contribution."
-            )
-
-            gr.Markdown("---")
-            gr.Markdown(
-                "### Domain Transfer\n\n"
-                "We run the **same** thinking-allocation policy on a *different* "
-                "domain — pull-request code review for non-security regressions. "
-                "None of these episodes appear in the training set. None are CVEs. "
-                "If the metacognitive pattern transfers without retraining, the "
-                "learned skill is a *general* reasoning-allocation capability, "
-                "not a CVE-triage classifier."
-            )
-            gr.Image(
-                value=TRANSFER_PNG if os.path.exists(TRANSFER_PNG) else None,
-                label="transfer_results.png",
-                show_label=False,
-            )
-            gr.Markdown(transfer_metrics_md())
-
-        # ╭─────────────────────────────────────────────╮
-        # │  Tab 5 — Red Team (reward-hacking defenses) │
-        # ╰─────────────────────────────────────────────╯
-        with gr.Tab("🛡 Red Team"):
-            gr.Markdown(
-                "### Adversarial verification of the reward function\n\n"
-                "Section §8 of the OpenEnv hackathon guide explicitly asks for "
-                "protection against reward hacking. We constructed five concrete "
-                "cheating strategies and ran each through the **same** scoring "
-                "path the GRPO trainer uses (`compute_metacognitive_reward` + a "
-                "faithful local reproduction of the env-reward and text-reward "
-                "shapes from `train_grpo.py::reward_fn`).\n\n"
-                "**Safety property:** no single rollout can dominate the honest "
-                "policy on the combined reward, because the three components "
-                "(env F1, metacog, text) are functionally orthogonal — every "
-                "attack maximizes one and catastrophically fails another.\n\n"
-                "_Reproduce: `python scripts/red_team.py` · "
-                "Full writeup: [`SAFEGUARDS.md`](SAFEGUARDS.md)_"
-            )
-
-            gr.Markdown(red_team_summary_md())
-
-            gr.Markdown("---")
-            gr.Markdown("### Inspect a single attack")
-
-            rt_choices, rt_default = red_team_attack_choices()
-            rt_picker = gr.Dropdown(
-                choices=rt_choices, value=rt_default,
-                label="Pick an attack (or the honest reference)", interactive=True,
-            )
-
-            with gr.Row():
-                rt_summary = gr.Markdown()
-                rt_excerpt = gr.Markdown()
-
-            if rt_default:
-                _s, _e = render_red_team_attack(rt_default)
-                rt_summary.value = _s
-                rt_excerpt.value = _e
-
-            rt_picker.change(
-                render_red_team_attack,
-                inputs=[rt_picker],
-                outputs=[rt_summary, rt_excerpt],
-            )
-
-            gr.Markdown("---")
-            gr.Markdown(
-                "### Why this matters\n\n"
-                "Most hackathon submissions will report only that they have "
-                "multiple reward components — they will not show that those "
-                "components actually constrain the policy adversarially. "
-                "This tab is the **empirical lower bound** on the reward's "
-                "robustness against the attack families we tested.\n\n"
-                "**The closest attack** ('reasoning padding', −22%) takes "
-                "correct actions and pads `<think>` with semantic-empty "
-                "repetition. The text reward's vuln-vocabulary heuristic + "
-                "the metacog's difficulty-awareness term together still "
-                "keep it strictly below the honest policy.\n\n"
-                "Adding new attacks is ~20 lines in `scripts/red_team.py`. "
-                "If you find one that breaks the safety property, the "
-                "script will fail with exit code 2 — patches welcome."
-            )
-
-        # ╭─────────────────────────────────────────────╮
-        # │  Tab 6 — Live Trace Inspector               │
-        # ╰─────────────────────────────────────────────╯
-        with gr.Tab("🔬 Live Trace Inspector"):
-            gr.Markdown(
-                "### Inspect actual rollouts during training\n\n"
-                "Section §15 of the OpenEnv hackathon guide says: *\"do not just "
-                "let training run forever without checking generations. Periodic "
-                "human inspection is still necessary.\"*\n\n"
-                "Every reward call from `train_grpo.py::reward_fn` streams to "
-                "`grpo_output/trace_log.jsonl` (live, line-buffered). This tab "
-                "tails that file so you can see distribution stats and the most "
-                "recent rollouts as they arrive — verify reward isn't being "
-                "hacked, spot reward-shaping pathologies, and confirm the "
-                "metacog signal is non-zero.\n\n"
-                "_Auto-refreshes every 5 seconds. The training Space is the "
-                "source of truth; if you're viewing this locally, the file "
-                "appears once you run `python train_grpo.py`._"
-            )
-
-            trace_summary_md = gr.Markdown(value=trace_log_summary_md())
-
-            gr.Markdown("---")
-
-            trace_table_md = gr.Markdown(value=trace_log_recent_table_md(20))
-
-            with gr.Row():
-                refresh_traces_btn = gr.Button("🔄 Refresh now", size="sm")
-                trace_n_slider = gr.Slider(
-                    minimum=5, maximum=50, step=5, value=20,
-                    label="Rows to show",
-                )
-
-            trace_timer = gr.Timer(5)
-
-            def update_trace_views(n_rows):
-                return (
-                    trace_log_summary_md(),
-                    trace_log_recent_table_md(int(n_rows)),
-                )
-
-            trace_timer.tick(
-                update_trace_views,
-                inputs=[trace_n_slider],
-                outputs=[trace_summary_md, trace_table_md],
-            )
-            refresh_traces_btn.click(
-                update_trace_views,
-                inputs=[trace_n_slider],
-                outputs=[trace_summary_md, trace_table_md],
-            )
-            trace_n_slider.change(
-                update_trace_views,
-                inputs=[trace_n_slider],
-                outputs=[trace_summary_md, trace_table_md],
-            )
-
-        # ╭─────────────────────────────────────────────╮
-        # │  Tab 7 — Training Progress                  │
-        # ╰─────────────────────────────────────────────╯
-        with gr.Tab("🏋️ Training Progress"):
-            status_header = gr.Markdown("### Initializing...")
-
-            with gr.Row():
-                manual_btn = gr.Button("🚀 Force Start", variant="secondary", size="sm")
-                refresh_btn = gr.Button("🔄 Manual Refresh", size="sm")
-
-            timer = gr.Timer(2)
-
-            with gr.Group():
-                gr.Markdown("#### Live Training Output (auto-refreshing)")
-                output_text = gr.Code(label=None, lines=20, interactive=False)
-
-            with gr.Group():
-                gr.Markdown("#### Training curve")
-                plot_img = gr.Image(
-                    label=None,
-                    value=TRAINING_PNG if os.path.exists(TRAINING_PNG) else None,
-                )
-
-            with gr.Group():
-                gr.Markdown("#### Baseline vs Trained eval")
-                eval_img = gr.Image(
-                    label=None,
-                    value=EVAL_PNG if os.path.exists(EVAL_PNG) else None,
-                )
-
-            def update_ui():
-                if not training_status["done"] and os.path.exists(TRAINING_STATS):
-                    training_status["done"] = True
-
-                if not training_status["running"] and not training_status["done"]:
-                    header = "### ⏸️ Ready to Train / Crashed"
-                elif training_status["done"]:
-                    header = "### ✅ Training Complete!"
-                else:
-                    header = "### ⏳ Training in Progress..."
-
-                log_val = training_status["progress"] or load_logs()
-                plot_val = TRAINING_PNG if os.path.exists(TRAINING_PNG) else None
-                eval_val = EVAL_PNG if os.path.exists(EVAL_PNG) else None
-                return header, log_val, plot_val, eval_val
-
-            timer.tick(update_ui,
-                       outputs=[status_header, output_text, plot_img, eval_img])
-            refresh_btn.click(update_ui,
-                              outputs=[status_header, output_text, plot_img, eval_img])
-            manual_btn.click(start_training_btn, outputs=[output_text])
-
-        # ╭─────────────────────────────────────────────╮
-        # │  Tab 8 — About                              │
-        # ╰─────────────────────────────────────────────╯
-        with gr.Tab("📖 About"):
-            gr.Markdown(
-                "### The contribution — calibrated metacognition as RL\n\n"
-                "Standard reasoning-RL (GRPO/PPO over `<think>...</think>`) "
-                "treats reasoning as a black box. The model can produce "
-                "arbitrarily long thoughts; whether it *knew* the problem was "
-                "hard before reasoning is never measured. **We train that "
-                "meta-skill explicitly.**\n\n"
-                "Before every `<think>` block, the agent must emit "
-                "`<budget_prediction>short|medium|long</budget_prediction>`. "
-                "The reward function scores three things on top of task F1:\n"
-                "1. **Calibration** — does actual length match the predicted band?\n"
-                "2. **Difficulty awareness** — long predictions on bugs, short on safe?\n"
-                "3. **Coupling** — every prediction grounded in a real tool call?\n\n"
-                "This converts the reward signal from *did you reason well?* "
-                "into *did you know in advance how hard the problem was, then "
-                "deliver exactly that much reasoning, on the right files?*\n\n"
-                "### Inference-time hard budget\n\n"
-                "The training-time signal is paired with a `LogitsProcessor` "
-                "that hard-caps `<think>` tokens at inference. The user picks "
-                "a compute budget; the trained policy degrades gracefully, "
-                "front-loading the most diagnostic reasoning. The untrained "
-                "baseline just gets cut off mid-sentence. See the **🎚 Budget "
-                "Slider** tab for the live demo.\n\n"
-                "### Domain transfer\n\n"
-                "The thinking-allocation policy generalizes across domains. "
-                "Evaluated on held-out *non-CVE* code-review episodes (race "
-                "conditions, auth bypasses, tenant leaks), the same heuristic "
-                "structure that the GRPO reward shapes drives **F1 ≈ 1.00 vs "
-                "0.28 for an untrained baseline**, with a **5.2× thinking-"
-                "allocation ratio** preserved. See the **📐 Calibration & "
-                "Transfer** tab.\n\n"
-                "### What's in this environment\n\n"
-                "- **6 MCP tools**: `read_file`, `search_code`, `get_function_list`, "
-                "  `flag_vulnerable`, `skip_file`, `submit_report`\n"
-                "- **150 real CVEs** from NVD (Log4Shell, Dirty COW, PwnKit, "
-                "  BlueKeep, Zerologon, …)\n"
-                "- **2,892 source files** with churn / complexity / TODO / recency "
-                "  features extracted from commit history\n"
-                "- **3 difficulty levels** (≤15 / 16-29 / 30+ files) with strict "
-                "  flag and investigation budgets\n"
-                "- **6-component composite reward**: F1 (35%) + report quality (15%) "
-                "  + investigation efficiency (10%) + thinking efficiency (10%) "
-                "  + precision bonus (10%) + **metacognitive calibration (30%)**\n\n"
-                "### Stack\n\n"
-                "- OpenEnv 0.2.3 — `MCPEnvironment` + FastMCP server\n"
-                "- TRL ≥ 0.17 — `GRPOTrainer` with custom `reward_funcs`\n"
-                "- Unsloth + bitsandbytes — 4-bit Qwen3-1.7B fits comfortably in 16 GB VRAM\n"
-                "- PEFT — LoRA r=16, α=32, on attention + MLP projections\n"
-                "- Gradio 5 — this Space (auto-refreshing dashboard + interactive demo)\n\n"
-                "### Reward-hacking defenses (NEW)\n\n"
-                "We adversarially verified the reward function against 5 distinct "
-                "cheating strategies. All 5 score strictly below the honest policy "
-                "(0.85 vs 0.66 worst-case attack, −22% margin). See the **🛡 Red "
-                "Team** tab for the interactive demonstration and "
-                "[`SAFEGUARDS.md`](SAFEGUARDS.md) for the full writeup.\n\n"
-                "### For judges\n\n"
-                "[`JUDGES.md`](JUDGES.md) is a single-page checklist mapping every "
-                "OpenEnv-guide judging criterion to the file/section/screenshot/"
-                "command where you can verify it in <1 minute. Total review time: "
-                "~14 minutes for a complete assessment.\n\n"
-                "### Links\n\n"
-                "- 💻 GitHub: https://github.com/subwaycookiecrunch/Meta-final-round-\n"
-                "- 📓 Colab: https://colab.research.google.com/github/subwaycookiecrunch/Meta-final-round-/blob/main/train_colab.ipynb\n"
-                "- 📄 Paper-style writeup: [`PAPER.md`](PAPER.md) (formal reward equations + adversarial robustness proof)\n"
-                "- 🛡 Safeguards: [`SAFEGUARDS.md`](SAFEGUARDS.md) (red-team results)\n"
-                "- ✅ Verification checklist: [`JUDGES.md`](JUDGES.md)\n"
-                "- ✍️ Blog: see `blog_post.md`\n\n"
-                "**Built with PyTorch OpenEnv. Submitted to the Razorpay AI Buildathon 2026 — Open Track.**"
-            )
+No training starts on boot. Source stays on the local model endpoint by default.
+Requested review exports are stored under `.cache/reviews/`.
+''')
+    gr.HTML('<footer class="footer"><b>THE THINKING BUDGET</b><span>Razorpay AI Buildathon · Open Track · Local prototype</span></footer>')
+    app.load(model_status_html,outputs=[runtime])
 
 
-if __name__ == "__main__":
-    if not training_status["done"] and not training_status["running"]:
-        print("🚀 [BOOT] Starting background training thread...")
-        threading.Thread(target=run_training, daemon=True).start()
-
-    app.launch(server_name="0.0.0.0", server_port=7860, ssr_mode=False, theme=gr.themes.Soft())
+if __name__=="__main__":
+    app.queue(default_concurrency_limit=1).launch(server_name=os.getenv("APP_HOST","127.0.0.1"),server_port=int(os.getenv("PORT","7860")),ssr_mode=False,share=False,theme=THEME,css=(ROOT/"ui/style.css").read_text(),show_error=False,footer_links=[],blocked_paths=[str(ROOT/".git"),str(ROOT/".venv")])

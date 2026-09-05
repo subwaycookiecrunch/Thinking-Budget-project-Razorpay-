@@ -1,179 +1,68 @@
-# CodeReviewEnv v3 — Environment Specification
+# Environment and runtime contracts
 
-> One-page formal specification of the OpenEnv environment that backs this submission.
-> Maps directly to the criteria in OpenEnv Hackathon Self-Serve Guide §4 *(environment as
-> first-class artifact)* and §8 *(prevention against reward hacking)*.
+The repository has two separate execution surfaces: the product review engine and the research OpenEnv environment. Their budgets and outputs are different.
 
----
+## Product review engine
 
-## 1. Substrate
+Source: `review_engine.py`. UI: `app.py`.
 
-| Property | Value |
+Input is a JSON source bundle or file blocks headed `=== relative/path.py ===`. The engine validates unique relative paths, rejects traversal/control characters, and limits input to 24 files, 16,000 characters per file, and 80,000 source characters overall. Source is data; it is never executed.
+
+A `ReviewBudget` specifies output tokens, accepted source characters, file count, request timeout, and run duration. The risk policy chooses per-file output allowances; the uniform policy uses input order and a common allowance. The preview shows a worst-case reservation. Actual execution can reuse unspent reported tokens.
+
+| Unit | Meaning |
 |---|---|
-| Framework | [OpenEnv](https://github.com/meta-pytorch/OpenEnv) `0.2.3` + [FastMCP](https://github.com/jlowin/fastmcp) |
-| Episode dataset | 150 CVE-investigation episodes, 92 with at least one bug (61%), 8 difficulty bands |
-| Code snippets indexed | 2,869 across all episodes |
-| Tools exposed | 4 MCP tools (see §3) |
-| Server | FastAPI + Uvicorn, deployed as a HuggingFace Space |
-| Source file | [`environment.py`](code_review_env/server/environment.py) (~440 lines) |
+| Output allowance | Requested maximum generated review tokens |
+| Output tokens reported | Provider's measured generation count |
+| Output tokens accounted | Reported generation, or the conservative reservation when usage is unknown |
+| Input tokens reported | Provider count for its complete prompt |
+| Source characters | User source admitted to requests; excludes prompt scaffolding |
 
-The env follows the canonical OpenEnv contract: `reset()` → `step(action)` → `state()` → `reward`.
+Output allowance does not bound input tokens, hardware compute, energy, or billed cost. The current local provider is Ollama, default `qwen3:4b`, with thinking disabled. The saved custom Qwen2.5 adapter is not loaded by this product path.
 
----
+A response must have a valid decision, bounded findings and summary, and exact single-line evidence for each finding. Outcomes are `flag`, `no_finding`, `needs_review`, or `deferred`. Invalid output, model abstention, and provider failure require human review. Two consecutive review failures open a circuit and defer subsequent files. Unknown usage consumes the request reservation. A provider-reported cap violation is exposed and stops further model requests.
 
-## 2. Observation space
+The JSON export contains configuration, source hashes, raw response events, validation outcomes, counters, and a hash-linked event sequence. The Markdown export is a readable human handoff. The hash chain is locally verifiable but not externally signed.
 
-Every observation returned by `reset()` or `step()` is a single string with
-deterministic structure:
+## Research investigation environment
 
-```
-[Investigation step k]
-<tool output OR system message>
-[Budget: B investigation points remaining | Flags: f/F]
-```
-
-- **Investigation step k**: monotonically increasing integer, anti-loop signal.
-- **Tool output**: structured text from one of the 4 tools.
-- **Budget line**: explicit budget telemetry. The agent always knows what it has left,
-  so the policy is never punished for running out without warning.
-
-The first observation also includes the CVE description, repository name, file list, and
-risk features (churn, complexity, TODO count, recency, language). This is the entire
-context the agent operates from — there is no hidden state.
-
----
-
-## 3. Action space
-
-The agent calls one of 4 MCP tools per step:
-
-| Tool | Args | Effect | Cost |
-|---|---|---|---:|
-| `read_file(filename)` | filename | Returns full file contents (truncated to 4 KB) and risk summary | 1 invest. point |
-| `search_pattern(pattern, filename?)` | regex, optional filename | Returns matching lines across files | 1 invest. point |
-| `flag_vulnerability(filename, reason)` | filename, justification | Marks a file as bug-bearing in the agent's report | counts toward flag budget `F` |
-| `submit_report()` | — | Terminates the episode with the current flag set | terminates |
-
-Action validation (in `_step_impl`):
-
-- Unknown tool name → terminating error response (no soft-fail), `reward=0`, `done=True`.
-- Invalid filename → returns "file not found" with current state preserved (no point cost).
-- Malformed JSON args → tool error message, `reward=0` for the step but episode continues.
-
----
-
-## 4. Budgets and termination conditions
-
-**Two independent budgets keep behaviour bounded:**
-
-1. **Flag budget `F`** = `min(num_files, max(2·bugs+3, 5))` per episode.
-   Prevents the trivial "flag everything" attack — flagging every file gives positives
-   for free but also caps the F1-numerator. F1 normalisation makes this strictly
-   dominated by selective flagging.
-
-2. **Investigation budget `B`** = `2 · num_files`. Each `read_file` / `search_pattern` call
-   costs 1 point. `flag_vulnerability` and `submit_report` are free. Once `B` reaches 0,
-   further investigation tools return `"WARNING: Investigation budget exhausted. Submit
-   your report."` and the agent must submit.
-
-3. **Episode terminates on:**
-   - Explicit `submit_report()` call.
-   - Investigation budget exhausted **AND** any further non-`submit` action attempted.
-   - `step_count` exceeds `len(files) · 3` (hard cap to prevent infinite loops if the
-     model emits malformed tool JSON forever).
-
-All three termination paths produce a final reward computation, never a silent crash.
-
----
-
-## 5. Reward decomposition
-
-The composite reward (this is the single function the GRPO trainer optimises):
-
-```
-R(τ) = 0.40 · F1_flagging(τ)               [outcome]
-     + 0.10 · format_compliance(τ)         [structure]
-     + 0.10 · valid_json(τ)                [structure]
-     + 0.15 · action_diversity(τ)          [process]
-     + 0.10 · efficiency(τ)                [process]
-     + 0.15 · thinking_allocation(τ)       [process — Qwen3 thinking budget]
-     + 0.30 · metacognitive(τ)             [meta — calibration, difficulty, coupling]
-```
-
-(The 0.30 metacog weight runs in parallel as a separate reward function passed to
-`GRPOTrainer`, so the trainer sees two independent reward callables, not one weighted
-sum. This is the §7 multi-independent-reward design verbatim.)
-
-Formal definitions of `metacognitive` are in [`PAPER.md`](PAPER.md) §4.3.
-
----
-
-## 6. Anti-reward-hacking mechanisms
-
-> *"Do not optimize a reward you have not tried to break yourself first."* — OpenEnv FAQ Q57
-
-Every defensive mechanism is enumerated here so a judge can verify by file lookup:
-
-| Attack vector | Defence | Where in code |
-|---|---|---|
-| **Flag-everything** to drive recall up | F1 normalisation; flag budget `F` | [`environment.py`](code_review_env/server/environment.py) |
-| **Flag-nothing** to avoid penalty | `format_compliance` requires non-empty flag list when bugs present | reward fn in `train_grpo.py` |
-| **Infinite tool-call loop** to delay termination | Hard step cap = `3·num_files`; investigation budget | [`environment.py`](code_review_env/server/environment.py) |
-| **Predict-long-everywhere** to maximise calibration | `difficulty_awareness` component penalises uncorrelated predictions | [`metacognitive_reward.py`](metacognitive_reward.py) |
-| **Predict without thinking** to game the budget tag | `coupling` component requires actual `<think>` length to match prediction band | [`metacognitive_reward.py`](metacognitive_reward.py) |
-| **Random-text payload** to satisfy format check | `valid_json` + `action_diversity` require real tool calls; F1 measures real outcomes | reward fn in `train_grpo.py` |
-| **Edit timer / abuse globals** | Tool calls run in the FastMCP server process; agent cannot mutate session state, snippet store, or label dict | OpenEnv server boundary |
-| **Feature-threshold shortcut** (NEW) | ~20% of safe files have inflated risk features ("deceptive traps") — looks like high-churn, high-complexity bug candidates, but are actually safe. Forces real reasoning, not feature hacking | [`environment.py`](code_review_env/server/environment.py) — `reset()` |
-
-All eight attack vectors are empirically tested by [`scripts/red_team.py`](scripts/red_team.py)
-and documented in [`SAFEGUARDS.md`](SAFEGUARDS.md). Every attempted attack scores
-**below** the honest metacognitive policy. Closest gap: −22 %.
-
-### Cost observability
-
-Every tool response includes a running cost counter:
-
-```
-[Budget: 12 investigation points remaining | Flags: 2/5 | Thinking cost: 847 chars]
-```
-
-This makes the agent's resource consumption **observable in the observation space** — the agent can see how much reasoning it has already spent and adapt. Standard tool-use environments hide this; we expose it so the policy can make real-time strategic decisions about where to invest its remaining budget.
-
----
-
-## 7. Reproducing the environment locally
+Source: `code_review_env/server/environment.py`. Server: `server/app.py`.
 
 ```bash
-git clone https://github.com/subwaycookiecrunch/Meta-final-round-
-cd Meta-final-round-
-pip install -r requirements.txt
-python -m uvicorn server.environment:app --host 0.0.0.0 --port 7860
+python -m uvicorn server.app:app --host 127.0.0.1 --port 7861
 ```
 
-Then in a separate shell:
+Use a persistent WebSocket or MCP session for a multi-action investigation. The server's factory creates an environment per SDK session. An environment instance holds one active episode; reset replaces it and discards the previous session. Do not multiplex independent investigations through one direct Python instance.
 
-```bash
-python demo.py            # runs untrained-baseline + smart-investigator policies
-python scripts/red_team.py  # rebuilds data/red_team_results.json
-python transfer_eval.py    # rebuilds grpo_output/transfer_results.png
+The public reset observation exposes context and session ID as serializable fields. It includes CVE-themed metadata, paths, and structural features. Ground-truth labels are retained for final scoring and withheld from intermediate flag/skip replies. These labels belong to generated scenarios; the code is not an extracted production CVE patch.
+
+| Tool | Arguments | Investigation cost |
+|---|---|---:|
+| `read_file` | `file_path` | 1 |
+| `search_code` | `pattern` | 2 |
+| `get_function_list` | `file_path` | 1 |
+| `flag_vulnerable` | `file_path`, `reasoning` | 0; consumes a flag slot |
+| `skip_file` | `file_path`, `reasoning` | 0 |
+| `submit_report` | `summary`, optional `confidence` | 0; ends episode |
+
+There are six tools. `search_code` performs case-insensitive substring matching, not arbitrary regex or shell execution. The SDK code-execution surface is disabled.
+
+For N files, investigation points are `2 × N`. A read costs one point, so every file can be read once; this budget limits repeated investigation, not initial coverage. Costs are checked before spending, preventing negative balances. The flag allowance is `min(N, max(5, ceil(0.4 × N)))`, based on observable patch size rather than hidden bug count.
+
+The environment rejects missing files, duplicate/conflicting decisions, invalid bounded reasoning, and post-submission actions. Exhausted investigation tools return a warning; the caller must submit. There is no general hard global action limit in this class. Client timeouts and request limits belong to the caller or product layer.
+
+Submission finalizes the research classification: undecided files are treated as unflagged for metrics. This differs from the product's explicit unresolved queue. Final precision/recall/F1 and composite reward are exposed structurally. Correct all-negative episodes receive F1=1 under the project's stated convention. See `code_review_env/scoring.py`.
+
+```text
+final = F1 × (0.35 × F1 + 0.20 × report_structure
+              + 0.15 × step_efficiency + 0.15 × reasoning_length_proxy
+              + 0.15 × precision_bonus)
 ```
 
-The hosted Space at <https://huggingface.co/spaces/lucid987654/code-review-env-v3>
-runs the same code and the same env build.
+Report and reasoning terms are heuristic proxies. The detection gate prevents those auxiliary terms alone from rescuing zero detection F1. This is not proof against all reward attacks. The training script has its own composite/fallback path; see [PAPER.md](PAPER.md).
 
----
+## Reproducibility boundary
 
-## 8. Why this design satisfies the OpenEnv guide criteria
+Seeded resets use a local random generator and copy episode data before injecting deceptive structural features. The source dataset is not modified by reset. Difficulty selects file-count bands: easy at most 15, medium 16–29, hard at least 30, with available-pool fallback.
 
-| Guide criterion | This env |
-|---|---|
-| §1 *Task verifiable* | F1 against gold bug labels in the episode dataset |
-| §1 *Success probability > 0* | Untrained baseline already achieves 28 % F1 on the transfer set |
-| §4 *reset / step / state / reward* | Canonical OpenEnv contract, all four implemented |
-| §4 *abuse prevention* | 7 attack vectors enumerated above with explicit defences |
-| §6 *curriculum-ready* | 8 difficulty bands; subset by `cvss` to construct curriculum |
-| §7 *multiple independent rewards* | 6 components (4 in main fn + 2 standalone callables) |
-| §8 *resist reward hacking* | Empirical red-team; SAFEGUARDS.md formal writeup |
-| §9 *process-aware feedback* | Metacog reward scores the prediction-vs-action coupling, not just final F1 |
-| §13 *deployment* | Live Space + Docker container + local Uvicorn paths all working |
-| §15 *inspect generations* | Live Trace Inspector tab streams every reward call |
+The benchmark reads canonical `data/` files directly and does not call the research environment's reset. Product review uses user-provided source. Verify each surface independently; success on one is not validation of the other.

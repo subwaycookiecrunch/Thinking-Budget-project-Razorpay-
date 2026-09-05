@@ -36,9 +36,9 @@ Show the failure event and unresolved file list. Export the audit JSON. Open eno
 
 Open the regenerated benchmark summary and its metric table.
 
-> “This benchmark tests the allocation mechanism across the bundled synthetic episodes. The compared policies use the same source detector; the difference is which files they read under a budget. It reports missed bugs, false positives, and source characters read. It is not a trained-model benchmark, not a held-out production evaluation, and not measured API cost savings.”
+> “This benchmark tests prioritization across 150 bundled synthetic episodes. It measures which positive-labeled files each policy actually reads under the same allowance, alongside missed positives and safe files reviewed. It measures file coverage, not bug detection. The shuffled-feature stress test shows the ranking depends strongly on those features. Actual model runs are shown separately.”
 
-Read only the current values shown in `grpo_output/benchmark_results.json`. Do not memorize numbers from legacy plots. Point out at least one miss or false positive, even if the overall result looks favorable.
+Read only the current values shown in `grpo_output/benchmark_results.json`. Do not memorize numbers from legacy plots. Point out missed positive files and shuffled-feature degradation, even if the original-feature result looks favorable.
 
 ## 3:45–4:25 — what broke
 

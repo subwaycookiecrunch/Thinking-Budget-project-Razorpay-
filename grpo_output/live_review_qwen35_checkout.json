@@ -1,0 +1,481 @@
+{
+  "schema_version": 1,
+  "run_id": "63662b42f654",
+  "created_at": "2026-09-05T13:57:10.343926+00:00",
+  "mode": "ollama",
+  "model": "qwen3.5:4b",
+  "strategy": "adaptive",
+  "fault_injection": "none",
+  "budget": {
+    "output_tokens": 2400,
+    "input_chars": 24000,
+    "max_files": 12,
+    "timeout_seconds": 60,
+    "run_seconds": 240
+  },
+  "patch_hash": "a1e1746e570137e65f6c6b4b80cafeba41c54a1d3539fdb667572d7ea800ca9d",
+  "files": [
+    {
+      "path": "payments/checkout.py",
+      "source_hash": "2306d62730a20d232953bd5ab8064fdc6b036f9124ce2cc044b3ac2fd77b5ff2",
+      "source_chars": 467,
+      "risk_score": 10,
+      "tier": "deep",
+      "signals": [
+        "Money, identity, or tenant boundary",
+        "External side effect or database access",
+        "Retry or repeated execution"
+      ],
+      "requested_tokens": 768,
+      "output_cap": 768,
+      "status": "no_finding",
+      "findings": [],
+      "summary": "No concrete security defects found; timeout handling and parameterized requests appear safe.",
+      "reported_tokens": 29,
+      "duration_ms": 11936
+    },
+    {
+      "path": "webhooks/handler.py",
+      "source_hash": "4922fe8961a221450559ec80ab70472fbbbcacb5da99c960e87ca8913b59439a",
+      "source_chars": 223,
+      "risk_score": 7,
+      "tier": "deep",
+      "signals": [
+        "Money, identity, or tenant boundary",
+        "Untrusted input boundary"
+      ],
+      "requested_tokens": 768,
+      "output_cap": 768,
+      "status": "flag",
+      "findings": [
+        {
+          "line": 6,
+          "quote": "orders.mark_paid(event['data']['order_id'])",
+          "title": "unauthenticated event processing",
+          "severity": "high",
+          "explanation": "The handler updates order state based on incoming payment events without verifying the event's signature or confirming the sender's authorization. Fix: Validate the webhook signature and ensure the order belongs to the requesting tenant before marking it as paid."
+        }
+      ],
+      "summary": "Payment events are processed without verifying their authenticity or ownership.",
+      "reported_tokens": 109,
+      "duration_ms": 13071
+    },
+    {
+      "path": "billing/money.py",
+      "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+      "source_chars": 286,
+      "risk_score": 5,
+      "tier": "standard",
+      "signals": [
+        "Money, identity, or tenant boundary"
+      ],
+      "requested_tokens": 512,
+      "output_cap": 512,
+      "status": "no_finding",
+      "findings": [],
+      "summary": "The code correctly converts amounts to paise using Decimal arithmetic with explicit validation and rounding.",
+      "reported_tokens": 31,
+      "duration_ms": 6311
+    },
+    {
+      "path": "config/display.py",
+      "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+      "source_chars": 117,
+      "risk_score": 1,
+      "tier": "brief",
+      "signals": [
+        "Test, documentation, or display-only path"
+      ],
+      "requested_tokens": 256,
+      "output_cap": 256,
+      "status": "no_finding",
+      "findings": [],
+      "summary": "No concrete security defects found in the provided configuration and utility code.",
+      "reported_tokens": 27,
+      "duration_ms": 5697
+    },
+    {
+      "path": "orders/receipt.py",
+      "source_hash": "48079965bfa969507d10dafe4c644bbb7871a6bde700e83fc32d6defd0fa94c4",
+      "source_chars": 159,
+      "risk_score": 1,
+      "tier": "brief",
+      "signals": [
+        "No configured priority signal"
+      ],
+      "requested_tokens": 256,
+      "output_cap": 256,
+      "status": "no_finding",
+      "findings": [],
+      "summary": "The code uses HTML escaping for user input and constructs a string safely without injection risks.",
+      "reported_tokens": 31,
+      "duration_ms": 5752
+    },
+    {
+      "path": "tests/test_money.py",
+      "source_hash": "8f960e91c0e0833c8159eb6f63290f0a56e071b6a966c8e619c32c19e7397560",
+      "source_chars": 134,
+      "risk_score": 1,
+      "tier": "brief",
+      "signals": [
+        "Test, documentation, or display-only path"
+      ],
+      "requested_tokens": 256,
+      "output_cap": 256,
+      "status": "no_finding",
+      "findings": [],
+      "summary": "Test file contains only safe decimal conversion assertions without security defects.",
+      "reported_tokens": 26,
+      "duration_ms": 6033
+    }
+  ],
+  "events": [
+    {
+      "index": 0,
+      "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "kind": "review_started",
+      "mode": "ollama",
+      "strategy": "adaptive",
+      "budget": {
+        "output_tokens": 2400,
+        "input_chars": 24000,
+        "max_files": 12,
+        "timeout_seconds": 60,
+        "run_seconds": 240
+      },
+      "patch_hash": "a1e1746e570137e65f6c6b4b80cafeba41c54a1d3539fdb667572d7ea800ca9d",
+      "hash": "cda3d37f2dd84b4d48fe7198705e86f5907305a9f9f139264aaea864ec2ad503"
+    },
+    {
+      "index": 1,
+      "previous_hash": "cda3d37f2dd84b4d48fe7198705e86f5907305a9f9f139264aaea864ec2ad503",
+      "kind": "file_routed",
+      "path": "payments/checkout.py",
+      "tier": "deep",
+      "signals": [
+        "Money, identity, or tenant boundary",
+        "External side effect or database access",
+        "Retry or repeated execution"
+      ],
+      "source_hash": "2306d62730a20d232953bd5ab8064fdc6b036f9124ce2cc044b3ac2fd77b5ff2",
+      "source_chars": 467,
+      "output_cap": 768,
+      "hash": "9d7bf4c32053389092db5e2506b72c86610e187efe6f14b9aaf7734f10d23854"
+    },
+    {
+      "index": 2,
+      "previous_hash": "9d7bf4c32053389092db5e2506b72c86610e187efe6f14b9aaf7734f10d23854",
+      "kind": "model_request",
+      "path": "payments/checkout.py",
+      "output_cap": 768,
+      "hash": "99c3f7ef30c04123419c5ac321b04708552f64aece9a9495a2b5d38c664e61d7"
+    },
+    {
+      "index": 3,
+      "previous_hash": "99c3f7ef30c04123419c5ac321b04708552f64aece9a9495a2b5d38c664e61d7",
+      "kind": "review_response",
+      "path": "payments/checkout.py",
+      "response_text": "{\"decision\":\"no_finding\",\"summary\":\"No concrete security defects found; timeout handling and parameterized requests appear safe.\",\"findings\":[]}",
+      "reported_output_tokens": 29,
+      "reported_input_tokens": 670,
+      "stop_reason": "stop",
+      "model": "qwen3.5:4b",
+      "hash": "eef5698378342d91b2770e6f3ddf16a38f57e0d46cba14c7af36f42e8300edd0"
+    },
+    {
+      "index": 4,
+      "previous_hash": "eef5698378342d91b2770e6f3ddf16a38f57e0d46cba14c7af36f42e8300edd0",
+      "kind": "review_validated",
+      "path": "payments/checkout.py",
+      "status": "no_finding",
+      "findings": [],
+      "reported_tokens": 29,
+      "summary": "No concrete security defects found; timeout handling and parameterized requests appear safe.",
+      "hash": "963bc7cfb18d41ccf36a91009fe9d5f72bb3f145e435869837fcbc6af09642a5"
+    },
+    {
+      "index": 5,
+      "previous_hash": "963bc7cfb18d41ccf36a91009fe9d5f72bb3f145e435869837fcbc6af09642a5",
+      "kind": "file_routed",
+      "path": "webhooks/handler.py",
+      "tier": "deep",
+      "signals": [
+        "Money, identity, or tenant boundary",
+        "Untrusted input boundary"
+      ],
+      "source_hash": "4922fe8961a221450559ec80ab70472fbbbcacb5da99c960e87ca8913b59439a",
+      "source_chars": 223,
+      "output_cap": 768,
+      "hash": "939fdc6bdac23e03a9746090592069d499843703fcb907ab5b362c8322add386"
+    },
+    {
+      "index": 6,
+      "previous_hash": "939fdc6bdac23e03a9746090592069d499843703fcb907ab5b362c8322add386",
+      "kind": "model_request",
+      "path": "webhooks/handler.py",
+      "output_cap": 768,
+      "hash": "a2cbc1187a40b86f40592649ae2c4f400a423232ecea943ea4a4852f8f80307d"
+    },
+    {
+      "index": 7,
+      "previous_hash": "a2cbc1187a40b86f40592649ae2c4f400a423232ecea943ea4a4852f8f80307d",
+      "kind": "review_response",
+      "path": "webhooks/handler.py",
+      "response_text": "{\"decision\":\"flag\", \"summary\":\"Payment events are processed without verifying their authenticity or ownership.\", \"findings\":[{\"line\": 6, \"quote\": \"orders.mark_paid(event['data']['order_id'])\", \"title\": \"unauthenticated event processing\", \"severity\": \"high\", \"explanation\":\"The handler updates order state based on incoming payment events without verifying the event's signature or confirming the sender's authorization. Fix: Validate the webhook signature and ensure the order belongs to the requesting tenant before marking it as paid.\"}]}",
+      "reported_output_tokens": 109,
+      "reported_input_tokens": 517,
+      "stop_reason": "stop",
+      "model": "qwen3.5:4b",
+      "hash": "c79740e4c33c4be784ae25ee7fe9f9e519386ea0eece47993d57aae4f4218370"
+    },
+    {
+      "index": 8,
+      "previous_hash": "c79740e4c33c4be784ae25ee7fe9f9e519386ea0eece47993d57aae4f4218370",
+      "kind": "review_validated",
+      "path": "webhooks/handler.py",
+      "status": "flag",
+      "findings": [
+        {
+          "line": 6,
+          "quote": "orders.mark_paid(event['data']['order_id'])",
+          "title": "unauthenticated event processing",
+          "severity": "high",
+          "explanation": "The handler updates order state based on incoming payment events without verifying the event's signature or confirming the sender's authorization. Fix: Validate the webhook signature and ensure the order belongs to the requesting tenant before marking it as paid."
+        }
+      ],
+      "reported_tokens": 109,
+      "summary": "Payment events are processed without verifying their authenticity or ownership.",
+      "hash": "414427fea8105097c35491e98abe24f8582438248cecd2d8fec4ee68e0a8aec9"
+    },
+    {
+      "index": 9,
+      "previous_hash": "414427fea8105097c35491e98abe24f8582438248cecd2d8fec4ee68e0a8aec9",
+      "kind": "file_routed",
+      "path": "billing/money.py",
+      "tier": "standard",
+      "signals": [
+        "Money, identity, or tenant boundary"
+      ],
+      "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+      "source_chars": 286,
+      "output_cap": 512,
+      "hash": "2f86edded65f53b4b463966b7d3cffb50fea12e16793551e05c778ada55d4baf"
+    },
+    {
+      "index": 10,
+      "previous_hash": "2f86edded65f53b4b463966b7d3cffb50fea12e16793551e05c778ada55d4baf",
+      "kind": "model_request",
+      "path": "billing/money.py",
+      "output_cap": 512,
+      "hash": "7c0fb0e054843927da4d9c1c94eb0a4654f09df08cede9e6c977aa205c9cfe11"
+    },
+    {
+      "index": 11,
+      "previous_hash": "7c0fb0e054843927da4d9c1c94eb0a4654f09df08cede9e6c977aa205c9cfe11",
+      "kind": "review_response",
+      "path": "billing/money.py",
+      "response_text": "{\"decision\":\"no_finding\",\"summary\":\"The code correctly converts amounts to paise using Decimal arithmetic with explicit validation and rounding.\",\"findings\":[]}",
+      "reported_output_tokens": 31,
+      "reported_input_tokens": 538,
+      "stop_reason": "stop",
+      "model": "qwen3.5:4b",
+      "hash": "998c93355d549751189f78a50f0667f49e04817418dcdc28246704c7d4c02efe"
+    },
+    {
+      "index": 12,
+      "previous_hash": "998c93355d549751189f78a50f0667f49e04817418dcdc28246704c7d4c02efe",
+      "kind": "review_validated",
+      "path": "billing/money.py",
+      "status": "no_finding",
+      "findings": [],
+      "reported_tokens": 31,
+      "summary": "The code correctly converts amounts to paise using Decimal arithmetic with explicit validation and rounding.",
+      "hash": "33d7cc4c75263c95be00540c649588145273b9c9d6c3add97da0db4751986f7f"
+    },
+    {
+      "index": 13,
+      "previous_hash": "33d7cc4c75263c95be00540c649588145273b9c9d6c3add97da0db4751986f7f",
+      "kind": "file_routed",
+      "path": "config/display.py",
+      "tier": "brief",
+      "signals": [
+        "Test, documentation, or display-only path"
+      ],
+      "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+      "source_chars": 117,
+      "output_cap": 256,
+      "hash": "eed366d9593df0f39bfa1cc0e114effaa084823f8dfd336536eea808e3084a09"
+    },
+    {
+      "index": 14,
+      "previous_hash": "eed366d9593df0f39bfa1cc0e114effaa084823f8dfd336536eea808e3084a09",
+      "kind": "model_request",
+      "path": "config/display.py",
+      "output_cap": 256,
+      "hash": "5117371986a2b27cb09cd8ccf2d504bce49f96f3d3507c7132fc00c000938102"
+    },
+    {
+      "index": 15,
+      "previous_hash": "5117371986a2b27cb09cd8ccf2d504bce49f96f3d3507c7132fc00c000938102",
+      "kind": "review_response",
+      "path": "config/display.py",
+      "response_text": "{\"decision\":\"no_finding\",\"summary\":\"No concrete security defects found in the provided configuration and utility code.\",\"findings\":[]}",
+      "reported_output_tokens": 27,
+      "reported_input_tokens": 484,
+      "stop_reason": "stop",
+      "model": "qwen3.5:4b",
+      "hash": "b6d01d5800b88c8b4ec9f9a0cfd128c1d1057937295e71a37ac21b7ddd830afd"
+    },
+    {
+      "index": 16,
+      "previous_hash": "b6d01d5800b88c8b4ec9f9a0cfd128c1d1057937295e71a37ac21b7ddd830afd",
+      "kind": "review_validated",
+      "path": "config/display.py",
+      "status": "no_finding",
+      "findings": [],
+      "reported_tokens": 27,
+      "summary": "No concrete security defects found in the provided configuration and utility code.",
+      "hash": "142fb35ff67046ed75b17daab0a5242261f16412bd7793f0c26f4492b9170b50"
+    },
+    {
+      "index": 17,
+      "previous_hash": "142fb35ff67046ed75b17daab0a5242261f16412bd7793f0c26f4492b9170b50",
+      "kind": "file_routed",
+      "path": "orders/receipt.py",
+      "tier": "brief",
+      "signals": [
+        "No configured priority signal"
+      ],
+      "source_hash": "48079965bfa969507d10dafe4c644bbb7871a6bde700e83fc32d6defd0fa94c4",
+      "source_chars": 159,
+      "output_cap": 256,
+      "hash": "728aa8ced1b07122f9b729d148526d64532623a901e82b4c51986383ad6fed6f"
+    },
+    {
+      "index": 18,
+      "previous_hash": "728aa8ced1b07122f9b729d148526d64532623a901e82b4c51986383ad6fed6f",
+      "kind": "model_request",
+      "path": "orders/receipt.py",
+      "output_cap": 256,
+      "hash": "8b6f81ab53af6e66825f229fec378fee0235f780b5a74bc47bd5f101d40b78c4"
+    },
+    {
+      "index": 19,
+      "previous_hash": "8b6f81ab53af6e66825f229fec378fee0235f780b5a74bc47bd5f101d40b78c4",
+      "kind": "review_response",
+      "path": "orders/receipt.py",
+      "response_text": "{\"decision\":\"no_finding\",\"summary\":\"The code uses HTML escaping for user input and constructs a string safely without injection risks.\",\"findings\":[]}",
+      "reported_output_tokens": 31,
+      "reported_input_tokens": 473,
+      "stop_reason": "stop",
+      "model": "qwen3.5:4b",
+      "hash": "2e106a9ddb5392d803e6d245310be46580fed0581f56a4d4d79f5a014db93712"
+    },
+    {
+      "index": 20,
+      "previous_hash": "2e106a9ddb5392d803e6d245310be46580fed0581f56a4d4d79f5a014db93712",
+      "kind": "review_validated",
+      "path": "orders/receipt.py",
+      "status": "no_finding",
+      "findings": [],
+      "reported_tokens": 31,
+      "summary": "The code uses HTML escaping for user input and constructs a string safely without injection risks.",
+      "hash": "c28f89a308d898f939349d5e6afb155515fe395864da0561d7f722917bd128f9"
+    },
+    {
+      "index": 21,
+      "previous_hash": "c28f89a308d898f939349d5e6afb155515fe395864da0561d7f722917bd128f9",
+      "kind": "file_routed",
+      "path": "tests/test_money.py",
+      "tier": "brief",
+      "signals": [
+        "Test, documentation, or display-only path"
+      ],
+      "source_hash": "8f960e91c0e0833c8159eb6f63290f0a56e071b6a966c8e619c32c19e7397560",
+      "source_chars": 134,
+      "output_cap": 256,
+      "hash": "a6d7d829685b438746f8f90894ecb5329e0c6e0d18fa5e1f1df9f8ffaa1b38b5"
+    },
+    {
+      "index": 22,
+      "previous_hash": "a6d7d829685b438746f8f90894ecb5329e0c6e0d18fa5e1f1df9f8ffaa1b38b5",
+      "kind": "model_request",
+      "path": "tests/test_money.py",
+      "output_cap": 256,
+      "hash": "744083b77c69efc41f4d6dd6f540f4b1a05a971bc34a3627d60819ce8bcc01a9"
+    },
+    {
+      "index": 23,
+      "previous_hash": "744083b77c69efc41f4d6dd6f540f4b1a05a971bc34a3627d60819ce8bcc01a9",
+      "kind": "review_response",
+      "path": "tests/test_money.py",
+      "response_text": "{\"decision\":\"no_finding\",\"summary\":\"Test file contains only safe decimal conversion assertions without security defects.\",\"findings\":[]}",
+      "reported_output_tokens": 26,
+      "reported_input_tokens": 487,
+      "stop_reason": "stop",
+      "model": "qwen3.5:4b",
+      "hash": "c3b3439961893b9a5d752dc0744a317d53166354cfd4ab782f5a37f5c2459ba2"
+    },
+    {
+      "index": 24,
+      "previous_hash": "c3b3439961893b9a5d752dc0744a317d53166354cfd4ab782f5a37f5c2459ba2",
+      "kind": "review_validated",
+      "path": "tests/test_money.py",
+      "status": "no_finding",
+      "findings": [],
+      "reported_tokens": 26,
+      "summary": "Test file contains only safe decimal conversion assertions without security defects.",
+      "hash": "e8c04983acbe19414b912cb064e727e7c3832296d6436e06d0d84ec79916ee21"
+    },
+    {
+      "index": 25,
+      "previous_hash": "e8c04983acbe19414b912cb064e727e7c3832296d6436e06d0d84ec79916ee21",
+      "kind": "review_completed",
+      "summary": {
+        "total_files": 6,
+        "flagged_files": 1,
+        "findings": 1,
+        "reviewed_files": 6,
+        "needs_review": 0,
+        "budget_respected": true
+      },
+      "usage": {
+        "output_tokens_reported": 253,
+        "input_tokens_reported": 3169,
+        "output_tokens_accounted": 253,
+        "output_tokens_reserved": 2816,
+        "input_chars": 1386,
+        "model_calls": 6,
+        "rule_calls": 0,
+        "unknown_usage_calls": 0
+      },
+      "hash": "d61fc3c4e7a3192d559083acab858c369e1abadd37d1a15a29e1920118c32f3c"
+    }
+  ],
+  "usage": {
+    "output_tokens_reported": 253,
+    "input_tokens_reported": 3169,
+    "output_tokens_accounted": 253,
+    "output_tokens_reserved": 2816,
+    "input_chars": 1386,
+    "model_calls": 6,
+    "rule_calls": 0,
+    "unknown_usage_calls": 0
+  },
+  "limitations": [
+    "A matching source quote validates location, not the truth of a finding.",
+    "Single-file context can miss cross-file defects.",
+    "No finding is not a safety certification; deferred files require human review.",
+    "Output limits do not cap input tokens, cost, or hardware compute."
+  ],
+  "duration_ms": 48803,
+  "summary": {
+    "total_files": 6,
+    "flagged_files": 1,
+    "findings": 1,
+    "reviewed_files": 6,
+    "needs_review": 0,
+    "budget_respected": true
+  },
+  "audit_valid": true
+}

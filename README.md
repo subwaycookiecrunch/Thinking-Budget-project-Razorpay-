@@ -23,13 +23,13 @@ The product combines deterministic allocation with a model-based source reviewer
 
 | Layer | What it demonstrates | What it does not establish |
 |---|---|---|
-| Review Lab | Source review, allocation, validated source quotations, unresolved work, and an audit export | Guaranteed defect detection or approval to ship |
+| Review lab | Source review, allocation, validated source quotations, unresolved work, and an audit export | Guaranteed defect detection or approval to ship |
 | Real model mode | Inference from the selected local or explicitly configured model | A newly trained model or improved model weights |
 | Offline mode | A deterministic rule-based review that works without model access | LLM inference |
-| Synthetic benchmark | Executed policy comparison with a common code detector and explicit reading cost | Held-out production accuracy, billed token savings, or business ROI |
-| Legacy research | An OpenEnv environment, reward objective, and training scaffolding | Verified adapter improvement, causal ablations, or generalization |
+| Synthetic benchmark | Executed file prioritization with actual bounded source reads | Bug detection, held-out production accuracy, billed token savings, or business ROI |
+| Training research | Saved Qwen2.5 LoRA adapter, checkpoints, logs, environment, and reward | Verified adapter improvement, causal ablations, or generalization |
 
-There are no trained adapter weights in this checkout. Historical “trained” traces and plots were produced with heuristic or constructed policies; they are not evidence of a trained model. The refreshed evaluation reports its own protocol and errors. See [research notes](PAPER.md) for the exact boundary.
+The checkout contains a real **Qwen2.5-1.5B-Instruct LoRA adapter and 100-step training artifacts**. The run does not establish improved model behavior: recorded action coupling is zero and most rewards lack an environment score. The product uses **pretrained Qwen3:4b**, separately, through Ollama. Historical “trained” heuristic traces and plots remain unsupported as model results. See [the evidence report](PAPER.md) and `python scripts/audit_training_evidence.py`.
 
 ## Try the product locally
 
@@ -40,7 +40,7 @@ python -m pip install -r requirements.txt
 python app.py
 ```
 
-Open the URL printed at startup. In Review Lab:
+Open the URL printed at startup. In Review lab:
 
 1. Load the synthetic payment example or provide a source bundle.
 2. Choose the review mode and budget.
@@ -48,7 +48,7 @@ Open the URL printed at startup. In Review Lab:
 4. Run a documented failure mode and inspect the audit trail.
 5. Export the result for review.
 
-The offline mode requires no API key. A real model mode requires its indicated local runtime or explicitly configured endpoint. Model output is untrusted: quoting a real source line confirms the quote exists, not that the model's conclusion is correct.
+The offline mode requires no API key. Local AI requires Ollama running with `qwen3:4b` available (`ollama pull qwen3:4b` if needed). Set `OLLAMA_MODEL` to select another installed model; the default endpoint is `http://127.0.0.1:11434`. Model output is untrusted: quoting a real source line confirms the quote exists, not that the model's conclusion is correct.
 
 ## Reproduce the evaluation
 
@@ -63,7 +63,7 @@ The default evaluation regenerates:
 - `grpo_output/benchmark_episodes.jsonl`: per-episode evidence.
 - `grpo_output/benchmark_pareto.png`: the accuracy-versus-reading-cost comparison.
 
-Read the generated protocol before quoting a number. Policies use the same detector and differ in which files they read. Source characters read are a cost proxy; they are not tokenizer counts or measured API bills. The bundled dataset is synthetic and was available during policy development, so it is not an untouched test set.
+Read the generated protocol before quoting a number. The primary metric is **coverage of dataset-positive files actually read**, not defects detected. On 150 synthetic episodes and 2,892 file rows, risk ranking reads 317/319 positive rows under a 1,468-file allowance; seeded random order reads 159/319. Risk ranking reads 48.75% fewer source characters than exhaustive reading. Shuffling features drops its coverage to 49.53%, exposing dependence on synthetic signals. Source characters are not model tokens or measured API bills. All bundled data was available during policy development and includes training data.
 
 The research reward smoke tests are separate:
 
@@ -87,18 +87,20 @@ Adaptive reasoning budgets already have substantial prior work. This project's c
 | File | Purpose |
 |---|---|
 | `app.py` | Local interactive product and research views |
-| `benchmark.py` | Reproducible deterministic allocation benchmark |
+| `review_engine.py` | Source validation, routing, model review, resource accounting, and audit |
+| `benchmark.py` | Reproducible deterministic file-coverage benchmark |
 | `code_review_env/server/environment.py` | Six-tool OpenEnv investigation environment |
 | `server/app.py` | Environment HTTP entry point |
 | `metacognitive_reward.py` | Experimental budget calibration and action-coupling reward |
 | `scripts/budget_processor.py` | Experimental local decoding budget processor |
-| `train_grpo.py`, `train_sft_warmup.py` | Optional training scaffolding; not required for the demo |
+| `train_grpo.py`, `train_sft_warmup.py` | Research training entry points; not required for the demo |
+| `grpo_output/adapter_config.json`, `grpo_output/adapter_model.safetensors` | Saved Qwen2.5 research adapter, separate from product model |
 | `data/` | Synthetic episodes, generated source snippets, and historical trace fixtures |
 | `ENV.md`, `SAFEGUARDS.md`, `PAPER.md` | Contracts, failure boundaries, and research limitations |
 | `docs/` | Submission kit and evidence assessment |
 
 ## Known limits
 
-The benchmark uses synthetic vulnerabilities and generated source, with feature/template correlations that can favor hand-designed rules. There is no independently labeled production evaluation or measured developer-time study. Character-based research diagnostics do not measure internal model cognition. Evidence checks are not semantic verification. Training and evaluation across truly held-out repositories remain future work.
+The benchmark uses synthetic vulnerabilities and generated source, with feature/template correlations that can favor hand-designed rules. There is no independently labeled production evaluation or measured developer-time study. Saved adapter weights are local artifacts and may be excluded by Git ignore rules; verify that any eventual submission actually includes or separately links the required weights. Character-based research diagnostics do not measure internal model cognition. Evidence checks are not semantic verification. Training and evaluation across truly held-out repositories remain future work.
 
 This repository is being prepared locally. Historical GitHub and Hugging Face links are not presented as verified deployments of this build. Publishing, video upload, and final form submission remain the entrant's actions.

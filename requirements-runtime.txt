@@ -1,0 +1,8 @@
+# Tested local application and deterministic benchmark runtime (Python 3.12).
+gradio==6.26.0
+httpx==0.28.1
+openenv-core==0.3.0
+fastmcp==4.0.3
+matplotlib==3.11.1
+numpy==2.5.2
+uvicorn==0.52.4

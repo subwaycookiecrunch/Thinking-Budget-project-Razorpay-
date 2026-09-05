@@ -1,389 +1,99 @@
-# The Thinking Budget: Calibrated Metacognition as Reinforcement Learning
+# The Thinking Budget: system design and evidence report
 
-**Razorpay AI Buildathon 2026 — Open Track. Built with PyTorch OpenEnv.**
+Razorpay Buildathon 2026 · Open Track · Local prototype
 
-> An RL environment + auxiliary objective that trains a reasoning LLM to
-> *predict how hard a problem is* before solving it, then deliver exactly
-> that much reasoning, on the right files.  We argue this is metacognitive
-> *awareness*, not just metacognitive *behavior*, and we present evidence
-> that the learned policy transfers across domains.
+## Abstract
 
-## 1. Abstract
+The Thinking Budget is a bounded code-review workflow. A deterministic policy allocates output allowances across source files; a local language model returns structured review candidates; exact source quotations are checked; failed and unreviewed files remain explicit. The research layer explores a calibration-and-action-coupling reward for training budget-aware agents. These are separate evidence tracks.
 
-Modern reasoning LLMs (Qwen3, DeepSeek-R1, GPT-o3) can produce arbitrarily
-long `<think>` blocks, but they use that capacity poorly: either they
-think hard about everything (slow, expensive) or about nothing (fast,
-shallow, wrong).  Existing reasoning RL (GRPO, PPO over reasoning tokens)
-treats the `<think>` block as a black box — a roll-out is sampled, a
-final answer is scored, gradients flow.  Whether the model *knew the
-problem was hard* before engaging deep reasoning is never measured and
-never trained.
+The checkout now contains a Qwen2.5-1.5B-Instruct LoRA adapter, checkpoints, and a 100-step training summary. Their presence establishes saved training artifacts, not successful learning. The product uses pretrained Qwen3:4b through Ollama and does not use that adapter. The allocation benchmark measures coverage of synthetic dataset labels under actual file-read budgets. It does not measure bug detection, learned reasoning, or production savings.
 
-We propose a hybrid environment + auxiliary objective that trains the
-meta-skill explicitly.  The agent investigates a real CVE patch
-(2,892 files across 150 NVD episodes) using six MCP tools.  Before each
-`<think>` block, the agent must emit a *budget prediction* — `short`,
-`medium`, or `long`.  The reward function scores **calibration** (does
-the actual length match the predicted band?), **difficulty awareness**
-(long predictions on actually-vulnerable files, short on safe ones), and
-**coupling** (every prediction tied to a real tool call) on top of task
-F1.  At inference time, a `LogitsProcessor` hard-caps `<think>` tokens
-per block and per episode.
+## 1. Problem and system boundary
 
-We show that:
+A developer reviewing a batch of changes has finite review capacity. The useful output is a source-linked queue of concerns plus the work still unresolved. A short answer alone cannot communicate whether every important file was inspected.
 
-  - The combined reward shapes a policy that **halves the reasoning effort
-    on safe code (51 % fewer `<think>` characters per safe file) and
-    nearly triples it on bug-bearing files (2.82× more)** — a **5.87×
-    bug-vs-safe allocation ratio**, compared to 1.02× for the untrained
-    baseline whose reasoning is essentially uniform.  Calibration on the
-    held-out eval set: **0.92 P(`long` | bug)** and **0.00 P(`long` |
-    safe)** on the heuristic-proxy policy that instantiates the target
-    shape (real numbers regenerate from the trained adapter at end of
-    training; both modes ship via `scripts/generate_calibration_plot.py`).
-  - The same allocation policy transfers, **without retraining**, to a
-    different domain (non-security pull-request review for race
-    conditions, auth bypasses, and tenant leaks): **F1 = 1.00** versus
-    **0.28** for the untrained baseline, with the thinking-allocation
-    ratio preserved (**5.24×**).
-  - Inference-time budget enforcement degrades gracefully on the trained
-    policy and catastrophically on the baseline.
+The current system accepts source bundles, rather than fetching private repositories or executing code. Each model request reviews one file, so cross-file defects may be missed. It produces candidates for a human reviewer and never approves a release or changes payment state.
 
-The contribution is the auxiliary objective + the environment that makes
-it learnable; both are open-source and importable on top of any
-reasoning-RL setup.
-
-## 2. Why this matters
-
-Process Reward Models score whether reasoning is correct.  They do **not**
-score whether the model knew the difficulty in advance.  That distinction
-matters because:
-
-  1. **Compute-adaptive inference**.  Models that self-assess difficulty
-     before reasoning can allocate compute on demand without
-     architectural changes.  Today's adaptive-compute literature
-     (early-exit, MoE routing) requires architecture surgery; a
-     metacognitive RL objective gets you most of the way there with
-     reward shaping alone.
-  2. **Transferable skill**.  Reasoning-allocation is an architecture-
-     and task-agnostic capability.  If we can train it on a substrate
-     where ground-truth difficulty is cheap and verifiable (CVE triage)
-     and have it transfer to PR review, the technique scales to any
-     heterogeneous multi-step investigation task.
-  3. **Honest agents**.  Calibration is also a safety property.  An agent
-     that overestimates its certainty is a known failure mode; one that
-     reliably emits `medium` when it's actually unsure is a foundation
-     for downstream uncertainty handling.
-
-## 3. The Environment
-
-### 3.1 Substrate
-
-  - **150 real CVEs** from NVD with full patch context.  Examples:
-    Log4Shell (CVE-2021-44228), Dirty COW (CVE-2016-5195), PwnKit
-    (CVE-2021-4034), BlueKeep (CVE-2019-0708), Zerologon (CVE-2020-1472).
-  - **2,892 source files** with extracted features: churn, cyclomatic
-    complexity, TODO/FIXME density, recency of last modification, file
-    component, language.
-  - **Three difficulty levels** controlled by file count: easy (≤15),
-    medium (16–29), hard (≥30).
-  - Per-episode budgets: a flag budget proportional to ground-truth bug
-    count and an investigation point budget proportional to file count.
-
-### 3.2 Tools (6 MCP endpoints, served via FastMCP)
-
-`read_file` (1 pt), `search_code` (2 pt), `get_function_list` (1 pt),
-`flag_vulnerable`, `skip_file`, `submit_report`.  All tool calls are
-logged and replayable; the environment is fully deterministic for a
-given seed, which is critical for our `reward_fn` to replay episodes
-during GRPO training.
-
-### 3.3 Reward function (six components)
-
-```
-total = 0.50 × env_score + 0.30 × metacognitive_score + 0.20 × text_score
-env_score = 0.35·F1
-          + 0.20·report_quality
-          + 0.15·investigation_efficiency
-          + 0.15·thinking_efficiency
-          + 0.15·precision_bonus
-metacognitive_score = (½·calibration + ½·difficulty_awareness)
-                       × (½ + ½·coupling)
-```
-
-The metacognitive component (this paper's contribution) is described in
-§4.
-
-## 4. Calibrated Metacognitive Reward
-
-> *Hackathon FAQ Q11:* **"Process supervision means giving feedback on intermediate reasoning or intermediate steps, not only on the final outcome."*
->
-> *FAQ Q44:* **"Use layered verification."**
->
-> The reward described below is exactly that: per-prediction process supervision (calibration, difficulty awareness, coupling), each layer scored by independent code with no shared state, composed multiplicatively where independence cannot be assumed (coupling).
-
-### 4.1 Output format
+## 2. Architecture
 
 ```text
-<budget_prediction>long</budget_prediction>
-<think>
-do_ioctl_handler in drivers/foo.c:412 calls copy_from_user with a
-user-supplied size; integer overflow into kmalloc → heap overflow.
-This is the bug.
-</think>
-<tool_call>{"name": "flag_vulnerable",
-            "arguments": {"file_path": "drivers/foo.c", ...}}</tool_call>
+source bundle → input validation → deterministic routing → budget reservation
+                                                        ↓
+                                               local model / offline rules
+                                                        ↓
+                              structured response + exact source-line check
+                                                        ↓
+                                  findings + unresolved queue + audit export
 ```
 
-Bands map to character ranges (token proxy): `short` ∈ [0, 80),
-`medium` ∈ [80, 250), `long` ∈ [250, ∞).
+`review_engine.py` separates three units: configured output-token allowances, provider-reported input/output tokens, and source characters admitted to review. They are not interchangeable. The router is hand-designed, not trained. The local product disables Qwen3 thinking mode; its allowance bounds generated review output, not a measured internal reasoning process.
 
-### 4.2 Sub-rewards
+A provider timeout may occur after tokens have been generated. The workflow conservatively consumes that request's reservation when usage is unknown. Invalid output and false citations produce `needs_review`. Two consecutive failed reviews open the circuit and defer remaining files. A hash-linked event sequence exposes accidental alteration of its contents; without external signing or anchoring it is not a tamper-proof record.
 
-  1. **Calibration**.  For each prediction-think pair `(p, T)`,
-     calibration is 1.0 iff `len(T) ∈ band(p)`, with smooth linear
-     decay outside the band.  Aggregated by mean over predictions.
+## 3. Reproducible prioritization benchmark
 
-  2. **Difficulty awareness**.  For each prediction-think-tool triple,
-     look up the ground-truth label of the file referenced by the tool
-     call.  `long` on bugs and `short` on safe earn 1.0; the wrong
-     direction earns 0.0; `medium` is neutral 0.5.
+Protocol: `python benchmark.py`, or the default `python eval_baseline.py`. The artifact includes source hashes, seed, per-episode results, and the metric definition.
 
-  3. **Coupling**.  The fraction of `<budget_prediction>` tokens that
-     are followed within the same generation by a tool call.  Acts as a
-     multiplier so a model cannot game the score by emitting orphan
-     predictions.
+The dataset contains 150 synthetic CVE-themed episodes, 2,892 file rows, 319 positive-labeled rows, and 58 negative-only episodes. Paths repeat across episodes; seven paths have conflicting labels. Generated snippets are not guaranteed to implement the corresponding CVE. Consequently, the primary metric is **coverage recall: positive-labeled files actually read / all positive-labeled files**. Reading a file is not detecting its bug.
 
-### 4.3 Formal definition
+At a 50% per-episode allowance rounded upward, every budgeted policy reads 1,468 files:
 
-Let *C* = (*p*<sub>1</sub>, *T*<sub>1</sub>, *a*<sub>1</sub>), …, (*p*<sub>N</sub>, *T*<sub>N</sub>, *a*<sub>N</sub>) be the sequence
-of (prediction, think-block, tool-call) triples extracted from a
-completion. Let *L*(*T*) denote the character length of think-block *T*,
-let *band*(·) map a band name to its closed-open character interval,
-and let *m*(·) map a band name to its midpoint:
+| Policy, original features | Positive rows read | Coverage | 95% episode-bootstrap interval | Positive rows not read |
+|---|---:|---:|---:|---:|
+| Seeded random order | 159 / 319 | 49.84% | 44.31–55.32% | 160 |
+| Risk ranked | 317 / 319 | 99.37% | 98.45–100% | 2 |
+| Risk with exploration | 314 / 319 | 98.43% | 96.68–99.69% | 5 |
+| Exhaustive, 2,892 reads | 319 / 319 | 100% | 100–100% | 0 |
 
-> *band*(short) = [0, 80), &nbsp;*band*(medium) = [80, 250), &nbsp;*band*(long) = [250, ∞)
+Risk ranking reads 1,851,768 of 3,613,066 available source characters: 48.75% fewer than exhaustive reading. This is not a token, latency, price, or energy measurement. Shuffling features reduces risk-ranked coverage to 49.53%, showing dependence on the synthetic feature-label relationship. Strong original-feature performance should not be extrapolated to real repositories.
 
-> *m*(short) = 40, &nbsp;*m*(medium) = 165, &nbsp;*m*(long) = 400
+These intervals describe resampling sensitivity over the bundled episodes, with one seeded random ordering. All data was available during development and includes training data. This is not a held-out evaluation. The optional weighted triage-loss units are illustrative assumptions, not measured business costs.
 
-**Calibration** for a single triple is
+## 4. Training artifacts: what is present
 
-> *c*<sub>i</sub> = 1 if *L*(*T*<sub>i</sub>) ∈ *band*(*p*<sub>i</sub>); &nbsp; *L*(*T*<sub>i</sub>) / *lo*(*p*<sub>i</sub>) if *L*(*T*<sub>i</sub>) < *lo*(*p*<sub>i</sub>); &nbsp; max(0, 1 − (*L*(*T*<sub>i</sub>) − *hi*(*p*<sub>i</sub>)) / *hi*(*p*<sub>i</sub>)) otherwise
+The supplied adapter configuration identifies `Qwen/Qwen2.5-1.5B-Instruct`, LoRA rank 16 and alpha 32. The adapter contains 392 BF16 tensors; the main file is 36,981,856 bytes. The training summary records 100 steps, mean reward 0.094827, early mean 0.101822 and late mean 0.104709, a difference of 0.002888.
 
-i.e., 1.0 inside the band with smooth linear decay outside.
+A small reward difference is not a detection-accuracy result. The trace audit also finds severe limitations: 200 reward traces include only 13 non-null environment scores; action coupling is zero in every trace, and 130 traces have no budget prediction. These diagnostics do not support a successful budget-aware agent training claim. Consult the current training audit artifact for full counts and definitions.
 
-**Difficulty awareness** depends on the ground-truth label *y*<sub>i</sub> ∈ {0 (safe), 1 (bug), ⊥ (unknown)} of the file referenced by *a*<sub>i</sub>:
+The product's pretrained Qwen3:4b inference is separate. A captured local run, including raw responses and validation outcomes, demonstrates runtime execution. It is not an evaluation of the saved Qwen2.5 adapter.
 
-> *d*<sub>i</sub> = 1 if (*p*<sub>i</sub> = long ∧ *y*<sub>i</sub> = 1) ∨ (*p*<sub>i</sub> = short ∧ *y*<sub>i</sub> = 0)
->
-> *d*<sub>i</sub> = 0 if (*p*<sub>i</sub> = long ∧ *y*<sub>i</sub> = 0) ∨ (*p*<sub>i</sub> = short ∧ *y*<sub>i</sub> = 1)
->
-> *d*<sub>i</sub> = 0.5 otherwise (medium prediction or unknown label)
+## 5. Experimental reward objective
 
-**Coupling** is the fraction of `<budget_prediction>` tags in the
-completion that are followed (within the same generation) by a tool
-call. Let *P* = total predictions emitted, *N* = predictions with a
-matched tool call. Then
+The proposed formatting objective associates a budget prediction with a reasoning block and following tool call. Character bands in `metacognitive_reward.py` are short `[0,80)`, medium `[80,250)`, and long `[250,9999)`. The implementation applies a smooth penalty outside a band.
 
-> *coupling* = *N* / max(1, *P*)
-
-**The composite metacognitive reward** is
-
-> *R*<sub>metacog</sub> = ½(*calibration* + *difficulty*) · (½ + ½ · *coupling*) ∈ [0, 1]
-
-where *calibration* = (1/*N*) Σ *c*<sub>i</sub> and *difficulty* = (1/*N*) Σ *d*<sub>i</sub>
-are the means over coupled triples. The factor (½ + ½ · *coupling*)
-hard-caps a fully-uncoupled emitter at 50% of the metacog signal —
-this *multiplicative* form (rather than an additive bonus) is what
-prevents orphan-prediction reward hacking; see §4.5.
-
-**The combined trainer reward** weights three orthogonal signals:
-
-> *R*<sub>final</sub> = 0.50 · *R*<sub>env</sub> + 0.30 · *R*<sub>metacog</sub> + 0.20 · *R*<sub>text</sub>
-
-where *R*<sub>env</sub> is the live MCP environment's composite F1 + thinking-
-efficiency score and *R*<sub>text</sub> is a deterministic format-and-quality
-heuristic (no LLM-as-judge).
-
-### 4.4 Empirical reward-hacking robustness
-
-We adversarially verified the safety property:
-
-> **Property (no-cheat).** For every cheating policy π in our red team,
-> *R*<sub>final</sub>(π) < *R*<sub>final</sub>(π<sub>honest</sub>).
-
-We constructed five attack families spanning the structural failure
-modes of metacognitive RL — calibration-only optimizers, difficulty
-inverters, orphan emitters, and reasoning padders — and ran each
-through the same scoring path the trainer uses (see [`scripts/red_team.py`](scripts/red_team.py)).
-
-| # | Attack | *c* | *d* | coup | *R*<sub>metacog</sub> | *R*<sub>env</sub> | *R*<sub>text</sub> | **R<sub>final</sub>** | gap |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1 | All-long spammer | 1.00 | 0.20 | 1.00 | 0.60 | 0.41 | 0.20 | 0.426 | −50% |
-| 2 | All-short lazy | 1.00 | 0.80 | 1.00 | 0.90 | 0.00 | 0.04 | 0.278 | −67% |
-| 3 | Orphan predictions | 0.85 | 0.00 | 0.00 | 0.21 | 0.00 | 0.06 | 0.076 | −91% |
-| 4 | Reasoning padding | 1.00 | 0.20 | 1.00 | 0.60 | 0.88 | 0.21 | 0.662 | **−22%** |
-| 5 | Difficulty inverter | 1.00 | 0.00 | 1.00 | 0.50 | 0.00 | 0.21 | 0.192 | −77% |
-| ✅ | Honest metacognitive | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 0.25 | **0.850** | — |
-
-Attack 4 is the empirical lower bound on the defense margin: a policy
-that takes correct actions but pads `<think>` with semantic-empty
-repetition. The text-reward's vuln-vocabulary heuristic and the
-metacog's difficulty-awareness term together still keep it 22% below
-the honest reference. Attack 2 ("all-short lazy") demonstrates the
-multi-component defense most clearly: it scores 0.90 on the metacog
-reward alone (perfect calibration, 4/5 difficulty correct), but the
-*R*<sub>env</sub> = 0 from skipping the bug zeros out the dominant term.
-
-A formal writeup, including the geometric argument for why the three
-sub-rewards are functionally orthogonal, is in
-[`SAFEGUARDS.md`](SAFEGUARDS.md).
-
-### 4.5 Why this design
-
-We designed for *non-gameability*. The geometric structure of *R*<sub>final</sub>
-forces honest self-assessment because:
-
-- **Calibration alone** is insufficient: an attacker can match length
-  bands without knowing difficulty (attack 5).
-- **Difficulty alone** is insufficient: an attacker can claim long-on-bug
-  without actually delivering long thoughts.
-- **Coupling alone** is insufficient: an attacker can ground predictions
-  in any tool call regardless of correctness.
-- The **multiplicative coupling factor** cuts the floor for
-  uncoupled emitters at 50%, while the **additive env / metacog / text
-  combination** ensures that exploiting one component sacrifices another.
-
-The only policy that maximizes all three sub-rewards simultaneously is
-one that (i) emits calibrated predictions, (ii) bases predictions on
-ground-truth file difficulty, and (iii) takes correct actions on the
-right files. That is the policy we want.
-
-## 5. Inference-time Budget Enforcement
-
-A `LogitsProcessor` (`scripts/budget_processor.ThinkingBudgetProcessor`)
-maintains per-sequence state across the batch:
-
-  - `in_block: bool` — are we currently inside `<think>...</think>`?
-  - `block_used`, `episode_used: int` — running token counters
-
-When `block_used ≥ per_block_budget` or
-`episode_used ≥ episode_budget`, the next-token logits are forced to
-the `</think>` token id.  This converts the soft, learned budget into
-a hard inference-time constraint without retraining.
-
-Combined with the metacognitive reward, the loop is closed: shaping
-during GRPO → policy learns to allocate; budget processor at inference
-→ policy degrades gracefully under arbitrary tightening.
-
-## 6. Domain Transfer
-
-We constructed five held-out episodes from a different domain — pull-
-request review for non-security regressions:
-
-| ID | Title | Files | Bugs |
-|---|---|---|---|
-| TR-CR-001 | payment refactor (race condition) | 12 | 2 |
-| TR-CR-002 | auth middleware migration (path-prefix bypass) | 14 | 1 |
-| TR-CR-003 | ML training-pipeline (reproducibility regression) | 10 | 1 |
-| TR-CR-004 | frontend perf refactor (stale closure) | 11 | 1 |
-| TR-CR-005 | DB query optimization (tenant leak) | 9 | 1 |
-
-None are CVEs.  None appear in the training data.  We evaluate the same
-risk-driven allocation policy that the metacognitive reward shapes the
-trained model toward — it uses only structural features (churn,
-complexity, TODOs, recency, is_test) and never sees the ground-truth
-label.
-
-| Policy | Aggregate F1 | Aggregate think ratio (bug/safe) |
-|---|---:|---:|
-| Untrained baseline (uniform random) | 0.28 | 1.29× |
-| Metacognitive policy (transfer) | **1.00** | **5.24×** |
-
-The same allocation pattern that solves CVE triage solves PR review.
-Reasoning effort routes to the right files in a domain the policy has
-never seen, on bug *types* never observed during training.
-
-## 7. Limitations
-
-  1. **Backbone size: Qwen3-1.7B is the right scale, not a constraint**.
-     1.7B is the *smallest* variant of Qwen3's thinking-mode family — the
-     smallest model that emits real `<think>` blocks at all. Going below
-     1.7B (e.g. Qwen2.5-0.5B, the model used in the canonical TRL/OpenEnv
-     Wordle tutorial) would remove the very behaviour we are studying.
-     Going larger would obscure the source of the effect: a 70B model
-     might allocate `<think>` correctly *because it is large*, not
-     because the reward shaped it. At 1.7B the prior is weak enough that
-     the metacognitive signal is the only plausible cause of the
-     allocation pattern — that is methodologically *stronger*, not
-     weaker. Recent published GRPO + verifiable-reward work clusters at
-     1.5–7B (DeepSeek-R1-Distill-1.5B, TinyLlama-GRPO, Qwen2.5-1.5B-RLHF
-     papers); we sit firmly in that band. The full reward stack and all
-     hyperparameters apply unchanged to Qwen3-4B and Qwen3-8B;
-     replication on larger backbones is a follow-up scaling question,
-     not a core claim of this submission.
-  2. **Calibration band granularity**.  Three bands (short/medium/long)
-     keep the format learnable in 400 steps; a finer numeric
-     prediction (e.g. 50/150/300/600 tokens) is more powerful but
-     harder to train at hackathon scale.
-  3. **Single-task transfer**.  Transfer is shown on one held-out
-     domain; broader transfer (mathematical reasoning, scientific paper
-     triage, bug-bounty triage) is the obvious next experiment.
-  4. **Live calibration plot**.  During training, the reward function
-     streams per-prediction `(pred_band, actual_length, label)` triples
-     to `grpo_output/eval_calibration.json`; the calibration figure is
-     regenerated automatically from this file at the end of training,
-     so the headline figure is real model data, not a heuristic proxy.
-     The pre-training placeholder figure shipped with the Space is
-     labeled as such.
-
-## 8. Future work
-
-  - **Numeric budget prediction** — replace the categorical band with a
-    real-valued token-count head (regression target).  Trade learnability
-    for richer calibration plots.
-  - **Self-play curriculum** — use the trained policy to *generate* new
-    investigation episodes (synthetic CVEs of bounded difficulty),
-    extending the 150-CVE dataset autonomously.
-  - **Cross-task transfer** — evaluate on math, scientific paper review,
-    and code-completion benchmarks.  If the policy transfers there, we
-    have a domain-general metacognition skill.
-  - **Inference-time KV-cache reuse** — the budget processor pairs
-    naturally with speculative decoding and prefix-cache reuse;
-    quantifying the wall-clock savings is straightforward future work.
-  - **Multi-agent extension** — pair the Investigator with a Skeptic
-    that challenges its flags; use cross-agent disagreement to detect
-    miscalibration.
-
-## 9. Reproducibility
-
-All code is in this repository.  The full reproduction is:
-
-```bash
-git clone https://github.com/subwaycookiecrunch/Meta-final-round-
-cd Meta-final-round-
-pip install -r requirements.txt    # see notebook for exact pins
-python train_grpo.py                # ~6–10 hours on a single A100
-python eval_baseline.py             # produces eval_baseline_vs_trained.png
-python transfer_eval.py             # produces transfer_results.png
-python scripts/generate_calibration_plot.py --mode real
+```text
+metacognitive = (0.5 × length_calibration + 0.5 × label_alignment)
+                × (0.5 + 0.5 × action_coupling)
 ```
 
-The `train_colab.ipynb` notebook wraps these steps for judges to run on
-a free A100 Colab.  All seeds are fixed (`42` for training, `7` for the
-heuristic plots, `11` for transfer), and a single deterministic episode
-seed is embedded in every prompt so the reward function can replay each
-episode in a fresh environment during GRPO.
+“Length calibration” means matching a categorical text-length band; it is not probability calibration. “Label alignment” rewards long text for positive-labeled files and short text for negative-labeled files; a vulnerability label is only a crude proxy for review difficulty. Safe code can require substantial effort to verify. Text length is not a direct measurement of cognition.
 
-## 10. Acknowledgements
+The environment's current final score gates auxiliary proxies with classification F1:
 
-Built with PyTorch OpenEnv. Submitted to the Razorpay AI Buildathon 2026.  We thank the OpenEnv
-maintainers for the `MCPEnvironment` substrate, the TRL team for
-GRPOTrainer + custom `reward_funcs`, and Unsloth for the 4-bit + LoRA
-training stack that fits Qwen3-1.7B comfortably under the HF Space
-14 GiB memory cap with full 4096-token context.
+```text
+env_score = F1 × (0.35 × F1 + 0.20 × report_structure
+                 + 0.15 × step_efficiency + 0.15 × reasoning_length_proxy
+                 + 0.15 × precision_bonus)
+```
 
----
+The trainer has a separate composite and fallback path. An environment-execution score and a text-only fallback score must not be pooled without reporting which path produced each reward. Saved checkpoints may precede the current hardened reward; compare the training configuration and source revision before reproducing.
 
-*Repository:* https://github.com/subwaycookiecrunch/Meta-final-round-
-*Live Space:* https://huggingface.co/spaces/lucid987654/code-review-env-v3
+## 6. Withdrawn historical conclusions
+
+The older demonstration scripts generated heuristic traces labeled “trained” and “untrained.” The historical 6× allocation ratio, perfect F1, and apparent transfer gains do not establish model improvement. The new adapter does not retroactively validate those outputs.
+
+The old truncation experiment changed displayed reasoning length while holding decisions fixed; constant F1 followed by construction. Ignoring a tag in a saved trace is not removing it during generation. Neither is a causal model ablation. Old calibration and training figures should be treated according to their generator and provenance, not their visual titles.
+
+Five constructed reward attacks are useful unit scenarios, but a simplified reward fixture is not the full training environment. Lower scores on five examples are not proof of general robustness or immunity to reward hacking.
+
+## 7. Related work
+
+Adaptive budgets are established research directions. [TALE](https://arxiv.org/abs/2412.18547) estimates budgets for reasoning tasks. [s1](https://arxiv.org/abs/2501.19393) controls test-time compute through budget forcing. [SelfBudgeter](https://arxiv.org/abs/2505.11274) combines cost pre-estimation with budget-guided reinforcement learning. [BudgetThinker](https://arxiv.org/abs/2508.17196) combines remaining-budget signals with staged training.
+
+This project's current claim is a review workflow with resource accounting, source evidence checks, and explicit handoff states. It does not claim to originate budget prediction, budget forcing, or adaptive reasoning training.
+
+## 8. Experiments needed next
+
+Freeze the policy before evaluation on independently labeled real pull requests. Compare the same model under equal total budgets with uniform allocation, risk allocation, fixed generation caps, and exhaustive review. Re-run actual inference for each condition. Report precision, recall, false positives, missed defects, abstentions, token usage, latency, and failure rate; include multiple seeds and paired uncertainty.
+
+To claim learning, evaluate the base model and actual adapter on the same untouched inputs and verify tool execution. To claim business value, measure developer review time and accepted findings in a pilot. Those remain future validations.

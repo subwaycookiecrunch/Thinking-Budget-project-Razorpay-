@@ -1,14 +1,2 @@
-unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git
-trl>=0.17
-peft
-accelerate
-bitsandbytes
-openenv-core
-fastmcp
-datasets
-matplotlib
-numpy
-gradio
-torch
-transformers
-tqdm
+# Local product runtime; training dependencies are separate.
+-r requirements-runtime.txt

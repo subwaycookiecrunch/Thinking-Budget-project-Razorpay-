@@ -192,6 +192,8 @@ class CodeReviewEnv:
 
         current_file = self._files[self._current_index]["file"]
         decision = (action.decision or "skip").lower()
+        if decision == "flag" and len(self._flagged) >= self._budget:
+            raise ValueError("Review flag budget exhausted; choose skip or stop")
 
         step_reward = 0.0
         if decision == "flag" and len(self._flagged) < self._budget:

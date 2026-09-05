@@ -1,0 +1,11 @@
+# Optional NVIDIA training stack. Do not install for the local review demo.
+-r requirements.txt
+torch
+transformers
+trl>=0.17
+peft
+accelerate
+bitsandbytes
+datasets
+tqdm
+unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git

@@ -203,7 +203,9 @@ def run_episode(episode: dict, snippets: dict, policy: str, budget_fraction: flo
     workspace = ReadWorkspace(files, snippets, budget)
     for path in plan:
         workspace.read_file(path)
-    metrics = score_plan(rows, plan, miss_cost, review_cost)
+    # A requested path with no source returned is not a completed review.
+    available_reads = [read['path'] for read in workspace.reads if read['source_available']]
+    metrics = score_plan(rows, available_reads, miss_cost, review_cost)
     return {"episode_id": episode["episode_id"], "domain": episode.get("domain", "synthetic-cve"),
             "policy": policy, "seed": seed, "budget_fraction": budget_fraction,
             "feature_condition": "shuffled_features" if feature_shift else "original_features",
@@ -213,8 +215,8 @@ def run_episode(episode: dict, snippets: dict, policy: str, budget_fraction: flo
             "source_chars_available": sum(len(snippets.get(f.path, "")) for f in files),
             "missing_source_reads": sum(not x["source_available"] for x in workspace.reads),
             **metrics, "reviewed_files": workspace.reads,
-            "missed_files": [r["file"] for r in rows if r["label"] == 1 and r["file"] not in plan],
-            "safe_files_reviewed": [r["file"] for r in rows if r["label"] == 0 and r["file"] in plan]}
+            "missed_files": [r["file"] for r in rows if r["label"] == 1 and r["file"] not in available_reads],
+            "safe_files_reviewed": [r["file"] for r in rows if r["label"] == 0 and r["file"] in available_reads]}
 
 
 def aggregate(records: list[dict]) -> dict:

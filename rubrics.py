@@ -16,6 +16,8 @@ Usage:
 """
 
 from openenv.core.rubrics.base import Rubric
+from code_review_env.scoring import report_quality
+from metacognitive_reward import BAND_RANGES, _calibration_score
 try:
     from openenv.core.rubrics.containers import WeightedSum
     WeightedRubric = WeightedSum
@@ -32,7 +34,7 @@ class F1ScoreRubric(Rubric):
         session = getattr(observation, 'session', None)
         if session is None:
             return 0.0
-        flagged = set(session.flagged_files)
+        flagged = set(getattr(session, "flagged", getattr(session, "flagged_files", set())))
         bugs = set(session.bugs)
         if not bugs:
             return 1.0 if not flagged else 0.0
@@ -49,16 +51,12 @@ class F1ScoreRubric(Rubric):
 class ReportQualityRubric(Rubric):
     """CVE ID + vuln type + code-level details mentioned in report."""
     def forward(self, action, observation) -> float:
-        report = getattr(observation, 'report', '') or ''
-        score = 0.0
-        if 'CVE-' in report:
-            score += 0.4
-        if any(kw in report.lower() for kw in ['buffer', 'overflow', 'injection',
-               'traversal', 'rce', 'xss', 'privilege', 'race condition']):
-            score += 0.3
-        if any(kw in report.lower() for kw in ['line', 'function', 'variable', 'call']):
-            score += 0.3
-        return min(score, 1.0)
+        session = getattr(observation, "session", None)
+        report = getattr(observation, "report", None)
+        if report is None:
+            report = getattr(session, "report", "")
+        return report_quality(report, session)
+
 
 
 class InvestigationEfficiencyRubric(Rubric):
@@ -67,6 +65,8 @@ class InvestigationEfficiencyRubric(Rubric):
         session = getattr(observation, 'session', None)
         if session is None:
             return 0.0
+        if hasattr(session, "files") and hasattr(session, "step_count"):
+            return max(0.0, 1.0 - session.step_count / max(1, len(session.files) * 3))
         used = session.invest_used
         budget = session.invest_budget
         if budget == 0:
@@ -85,6 +85,8 @@ class ThinkingEfficiencyRubric(Rubric):
         session = getattr(observation, 'session', None)
         if session is None:
             return 0.0
+        if hasattr(session, "thinking_efficiency_score"):
+            return session.thinking_efficiency_score()
         trace = getattr(session, 'thinking_trace', [])
         if not trace:
             return 0.5
@@ -105,10 +107,9 @@ class PrecisionBonusRubric(Rubric):
         session = getattr(observation, 'session', None)
         if session is None:
             return 0.0
-        flagged = set(session.flagged_files)
+        flagged = set(getattr(session, "flagged", getattr(session, "flagged_files", set())))
         bugs = set(session.bugs)
-        fp = len(flagged - bugs)
-        return 1.0 if fp == 0 and len(flagged) > 0 else 0.0
+        return len(flagged & bugs) / len(flagged) if flagged else 0.0
 
 
 class CalibrationRubric(Rubric):
@@ -120,16 +121,14 @@ class CalibrationRubric(Rubric):
         pairs = getattr(session, 'budget_pairs', [])
         if not pairs:
             return 0.5
-        bands = {'short': (0, 80), 'medium': (80, 250), 'long': (250, float('inf'))}
-        scores = []
-        for pred, actual_len in pairs:
-            lo, hi = bands.get(pred, (0, float('inf')))
-            if lo <= actual_len < hi:
-                scores.append(1.0)
-            else:
-                dist = min(abs(actual_len - lo), abs(actual_len - hi))
-                scores.append(max(0.0, 1.0 - dist / 200.0))
-        return sum(scores) / len(scores) if scores else 0.5
+        scores = [
+            _calibration_score(pred, actual_len)
+            if pred in BAND_RANGES and isinstance(actual_len, (int, float)) and actual_len >= 0
+            else 0.0
+            for pred, actual_len in pairs
+        ]
+        return sum(scores) / len(scores)
+
 
 
 class DifficultyAwarenessRubric(Rubric):
@@ -159,19 +158,18 @@ class DifficultyAwarenessRubric(Rubric):
 class CouplingRubric(Rubric):
     """Action coupling: predictions followed by real tool calls.
     
-    Acts as a quality gate — orphan predictions cannot game the score.
-    Returns 0.5-1.0 (used as a multiplicative modifier in the composite).
+    Returns a raw fraction in [0, 1]. The composite applies its gate once.
+    Live execution is still required to verify successful tool actions.
     """
     def forward(self, action, observation) -> float:
         session = getattr(observation, 'session', None)
         if session is None:
-            return 0.5
+            return 0.0
         preds = getattr(session, 'prediction_count', 0)
         coupled = getattr(session, 'coupled_count', 0)
-        if preds == 0:
-            return 0.5
-        ratio = coupled / preds
-        return 0.5 + 0.5 * ratio
+        if preds <= 0:
+            return 0.0
+        return max(0.0, min(1.0, coupled / preds))
 
 
 # ── Composite rubric ──────────────────────────────────────────────
@@ -179,9 +177,8 @@ class CouplingRubric(Rubric):
 class MetacognitiveCompositeRubric(Rubric):
     """Metacognitive score = (0.5·calibration + 0.5·difficulty) × (0.5 + 0.5·coupling).
     
-    The multiplicative coupling term makes the reward non-gameable:
-    a policy that emits perfect predictions but never grounds them
-    in tool calls gets a 0.5× penalty.
+    Orphan predictions receive a multiplicative penalty. This length-based
+    proxy does not prove semantic reasoning quality or prevent every exploit.
     """
     def __init__(self):
         super().__init__()
@@ -190,6 +187,9 @@ class MetacognitiveCompositeRubric(Rubric):
         self.coupling = CouplingRubric()
 
     def forward(self, action, observation) -> float:
+        session = getattr(observation, "session", None)
+        if session is None or getattr(session, "prediction_count", 0) <= 0:
+            return 0.0
         cal = self.calibration(action, observation)
         diff = self.difficulty_awareness(action, observation)
         coup = self.coupling(action, observation)
@@ -200,7 +200,7 @@ class MetacognitiveCompositeRubric(Rubric):
 class ThinkingBudgetRubric(Rubric):
     """Top-level composable rubric for The Thinking Budget.
     
-    total = 0.50 · env_score + 0.30 · metacog_score + 0.20 · text_score
+    total = F1 · (0.50 · env_score + 0.30 · metacog_score + 0.20 · text_score)
     
     Each component is a proper OpenEnv Rubric subclass, enabling
     introspection via rubric.named_children() and rubric.last_score.
@@ -226,5 +226,6 @@ class ThinkingBudgetRubric(Rubric):
         metacog_score = self.metacog(action, observation)
         # text_score is computed separately from completion text
         # (not available in the Rubric action/observation interface)
-        text_score = 0.5  # default; overridden at training time
-        return 0.50 * env_score + 0.30 * metacog_score + 0.20 * text_score
+        text_score = max(0.0, min(1.0, getattr(observation, "text_score", 0.0)))
+        correctness = F1ScoreRubric()(action, observation)
+        return correctness * (0.50 * env_score + 0.30 * metacog_score + 0.20 * text_score)

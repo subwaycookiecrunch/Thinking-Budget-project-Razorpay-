@@ -1,0 +1,497 @@
+{
+  "schema_version": 1,
+  "run_id": "bdb9f21d7883",
+  "created_at": "2026-09-05T13:41:25.050818+00:00",
+  "mode": "ollama",
+  "model": "qwen3:4b",
+  "strategy": "adaptive",
+  "fault_injection": "none",
+  "budget": {
+    "output_tokens": 2400,
+    "input_chars": 24000,
+    "max_files": 12,
+    "timeout_seconds": 60,
+    "run_seconds": 240
+  },
+  "patch_hash": "a1e1746e570137e65f6c6b4b80cafeba41c54a1d3539fdb667572d7ea800ca9d",
+  "files": [
+    {
+      "path": "payments/checkout.py",
+      "source_hash": "2306d62730a20d232953bd5ab8064fdc6b036f9124ce2cc044b3ac2fd77b5ff2",
+      "source_chars": 467,
+      "risk_score": 10,
+      "tier": "deep",
+      "signals": [
+        "Money, identity, or tenant boundary",
+        "External side effect or database access",
+        "Retry or repeated execution"
+      ],
+      "requested_tokens": 768,
+      "output_cap": 768,
+      "status": "flag",
+      "findings": [
+        {
+          "line": 11,
+          "quote": "response = requests.post(gateway_url + '/charges', json=payload, timeout=5)",
+          "title": "Unverified payment event",
+          "severity": "high",
+          "explanation": "Incoming payment events need authenticity checks before changing order state. The code assumes all gateway responses are valid without verifying the payment's origin. Fix: Add signature validation for payment events from the gateway."
+        }
+      ],
+      "summary": "Missing payment event authenticity check",
+      "reported_tokens": 128,
+      "duration_ms": 10593
+    },
+    {
+      "path": "webhooks/handler.py",
+      "source_hash": "4922fe8961a221450559ec80ab70472fbbbcacb5da99c960e87ca8913b59439a",
+      "source_chars": 223,
+      "risk_score": 7,
+      "tier": "deep",
+      "signals": [
+        "Money, identity, or tenant boundary",
+        "Untrusted input boundary"
+      ],
+      "requested_tokens": 768,
+      "output_cap": 768,
+      "status": "flag",
+      "findings": [
+        {
+          "line": 5,
+          "quote": "    if event['type'] == 'payment.captured':",
+          "title": "Missing event authenticity check",
+          "severity": "high",
+          "explanation": "Incoming payment events need authenticity verification before changing order state. Fix: Add signature validation for webhook events before processing."
+        }
+      ],
+      "summary": "Payment event lacks authenticity check before order state update",
+      "reported_tokens": 109,
+      "duration_ms": 6916
+    },
+    {
+      "path": "billing/money.py",
+      "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+      "source_chars": 286,
+      "risk_score": 5,
+      "tier": "standard",
+      "signals": [
+        "Money, identity, or tenant boundary"
+      ],
+      "requested_tokens": 512,
+      "output_cap": 512,
+      "status": "no_finding",
+      "findings": [],
+      "summary": "No security or correctness defects found in money conversion logic",
+      "reported_tokens": 34,
+      "duration_ms": 3375
+    },
+    {
+      "path": "config/display.py",
+      "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+      "source_chars": 117,
+      "risk_score": 1,
+      "tier": "brief",
+      "signals": [
+        "Test, documentation, or display-only path"
+      ],
+      "requested_tokens": 256,
+      "output_cap": 256,
+      "status": "no_finding",
+      "findings": [],
+      "summary": "No security or correctness defects found in display configuration",
+      "reported_tokens": 33,
+      "duration_ms": 4191
+    },
+    {
+      "path": "orders/receipt.py",
+      "source_hash": "48079965bfa969507d10dafe4c644bbb7871a6bde700e83fc32d6defd0fa94c4",
+      "source_chars": 159,
+      "risk_score": 1,
+      "tier": "brief",
+      "signals": [
+        "No configured priority signal"
+      ],
+      "requested_tokens": 256,
+      "output_cap": 256,
+      "status": "no_finding",
+      "findings": [],
+      "summary": "No security defects found in receipt.py",
+      "reported_tokens": 31,
+      "duration_ms": 3742
+    },
+    {
+      "path": "tests/test_money.py",
+      "source_hash": "8f960e91c0e0833c8159eb6f63290f0a56e071b6a966c8e619c32c19e7397560",
+      "source_chars": 134,
+      "risk_score": 1,
+      "tier": "brief",
+      "signals": [
+        "Test, documentation, or display-only path"
+      ],
+      "requested_tokens": 256,
+      "output_cap": 256,
+      "status": "no_finding",
+      "findings": [],
+      "summary": "No security or correctness defects found in test file",
+      "reported_tokens": 33,
+      "duration_ms": 4011
+    }
+  ],
+  "events": [
+    {
+      "index": 0,
+      "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "kind": "review_started",
+      "mode": "ollama",
+      "strategy": "adaptive",
+      "budget": {
+        "output_tokens": 2400,
+        "input_chars": 24000,
+        "max_files": 12,
+        "timeout_seconds": 60,
+        "run_seconds": 240
+      },
+      "patch_hash": "a1e1746e570137e65f6c6b4b80cafeba41c54a1d3539fdb667572d7ea800ca9d",
+      "hash": "cda3d37f2dd84b4d48fe7198705e86f5907305a9f9f139264aaea864ec2ad503"
+    },
+    {
+      "index": 1,
+      "previous_hash": "cda3d37f2dd84b4d48fe7198705e86f5907305a9f9f139264aaea864ec2ad503",
+      "kind": "file_routed",
+      "path": "payments/checkout.py",
+      "tier": "deep",
+      "signals": [
+        "Money, identity, or tenant boundary",
+        "External side effect or database access",
+        "Retry or repeated execution"
+      ],
+      "source_hash": "2306d62730a20d232953bd5ab8064fdc6b036f9124ce2cc044b3ac2fd77b5ff2",
+      "source_chars": 467,
+      "output_cap": 768,
+      "hash": "9d7bf4c32053389092db5e2506b72c86610e187efe6f14b9aaf7734f10d23854"
+    },
+    {
+      "index": 2,
+      "previous_hash": "9d7bf4c32053389092db5e2506b72c86610e187efe6f14b9aaf7734f10d23854",
+      "kind": "model_request",
+      "path": "payments/checkout.py",
+      "output_cap": 768,
+      "hash": "99c3f7ef30c04123419c5ac321b04708552f64aece9a9495a2b5d38c664e61d7"
+    },
+    {
+      "index": 3,
+      "previous_hash": "99c3f7ef30c04123419c5ac321b04708552f64aece9a9495a2b5d38c664e61d7",
+      "kind": "review_response",
+      "path": "payments/checkout.py",
+      "response_text": "{\n  \"decision\": \"flag\",\n  \"summary\": \"Missing payment event authenticity check\",\n  \"findings\": [\n    {\n      \"line\": 11,\n      \"quote\": \"response = requests.post(gateway_url + '/charges', json=payload, timeout=5)\",\n      \"title\": \"Unverified payment event\",\n      \"explanation\": \"Incoming payment events need authenticity checks before changing order state. The code assumes all gateway responses are valid without verifying the payment's origin. Fix: Add signature validation for payment events from the gateway.\"\n   ,\n      \"severity\": \"high\"\n    }\n  ]\n}\n",
+      "reported_output_tokens": 128,
+      "reported_input_tokens": 653,
+      "stop_reason": "stop",
+      "model": "qwen3:4b",
+      "hash": "0845033380e1041ba9b33739449fce2cbc1bdb4f26a2e129bb8b4d6dd7b6ebdb"
+    },
+    {
+      "index": 4,
+      "previous_hash": "0845033380e1041ba9b33739449fce2cbc1bdb4f26a2e129bb8b4d6dd7b6ebdb",
+      "kind": "review_validated",
+      "path": "payments/checkout.py",
+      "status": "flag",
+      "findings": [
+        {
+          "line": 11,
+          "quote": "response = requests.post(gateway_url + '/charges', json=payload, timeout=5)",
+          "title": "Unverified payment event",
+          "severity": "high",
+          "explanation": "Incoming payment events need authenticity checks before changing order state. The code assumes all gateway responses are valid without verifying the payment's origin. Fix: Add signature validation for payment events from the gateway."
+        }
+      ],
+      "reported_tokens": 128,
+      "summary": "Missing payment event authenticity check",
+      "hash": "434f67b94f1916400833215d674484c0247d6ca23288097352be99042a442353"
+    },
+    {
+      "index": 5,
+      "previous_hash": "434f67b94f1916400833215d674484c0247d6ca23288097352be99042a442353",
+      "kind": "file_routed",
+      "path": "webhooks/handler.py",
+      "tier": "deep",
+      "signals": [
+        "Money, identity, or tenant boundary",
+        "Untrusted input boundary"
+      ],
+      "source_hash": "4922fe8961a221450559ec80ab70472fbbbcacb5da99c960e87ca8913b59439a",
+      "source_chars": 223,
+      "output_cap": 768,
+      "hash": "6ee80529abed5dfe6520c5e09ce336c1391eefddeeaf03899c7d156865a16c9b"
+    },
+    {
+      "index": 6,
+      "previous_hash": "6ee80529abed5dfe6520c5e09ce336c1391eefddeeaf03899c7d156865a16c9b",
+      "kind": "model_request",
+      "path": "webhooks/handler.py",
+      "output_cap": 768,
+      "hash": "15a6b412da773c53068fc8596bf908a7799e8fd7ef267c043e17bf9ae2744a05"
+    },
+    {
+      "index": 7,
+      "previous_hash": "15a6b412da773c53068fc8596bf908a7799e8fd7ef267c043e17bf9ae2744a05",
+      "kind": "review_response",
+      "path": "webhooks/handler.py",
+      "response_text": "{\n  \"decision\": \"flag\",\n  \"summary\": \"Payment event lacks authenticity check before order state update\",\n  \"findings\": [\n    {\n      \"line\": 5,\n      \"quote\": \"    if event['type'] == 'payment.captured':\",\n      \"title\": \"Missing event authenticity check\",\n      \"explanation\": \"Incoming payment events need authenticity verification before changing order state. Fix: Add signature validation for webhook events before processing.\"\n   ,\n      \"severity\": \"high\"\n    }\n  ]\n}\n",
+      "reported_output_tokens": 109,
+      "reported_input_tokens": 500,
+      "stop_reason": "stop",
+      "model": "qwen3:4b",
+      "hash": "b4e6ca3504500de8eb7798d530ea39cd785c89a199d381aab1a41cd493b9e13f"
+    },
+    {
+      "index": 8,
+      "previous_hash": "b4e6ca3504500de8eb7798d530ea39cd785c89a199d381aab1a41cd493b9e13f",
+      "kind": "review_validated",
+      "path": "webhooks/handler.py",
+      "status": "flag",
+      "findings": [
+        {
+          "line": 5,
+          "quote": "    if event['type'] == 'payment.captured':",
+          "title": "Missing event authenticity check",
+          "severity": "high",
+          "explanation": "Incoming payment events need authenticity verification before changing order state. Fix: Add signature validation for webhook events before processing."
+        }
+      ],
+      "reported_tokens": 109,
+      "summary": "Payment event lacks authenticity check before order state update",
+      "hash": "0c13b4519ca8784b668772904cb916707c05122e08ae9c559c6588106da30799"
+    },
+    {
+      "index": 9,
+      "previous_hash": "0c13b4519ca8784b668772904cb916707c05122e08ae9c559c6588106da30799",
+      "kind": "file_routed",
+      "path": "billing/money.py",
+      "tier": "standard",
+      "signals": [
+        "Money, identity, or tenant boundary"
+      ],
+      "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+      "source_chars": 286,
+      "output_cap": 512,
+      "hash": "0dab66501642ab2387ad82c209d44e8638d5f502e65bf4bc622d8e93204c195d"
+    },
+    {
+      "index": 10,
+      "previous_hash": "0dab66501642ab2387ad82c209d44e8638d5f502e65bf4bc622d8e93204c195d",
+      "kind": "model_request",
+      "path": "billing/money.py",
+      "output_cap": 512,
+      "hash": "b7de21473a3d2c40e64ae93e96c7c0b3b4f6c9a231f4ce3339824892f27e4f9e"
+    },
+    {
+      "index": 11,
+      "previous_hash": "b7de21473a3d2c40e64ae93e96c7c0b3b4f6c9a231f4ce3339824892f27e4f9e",
+      "kind": "review_response",
+      "path": "billing/money.py",
+      "response_text": "{\n  \"decision\": \"no_finding\",\n  \"summary\": \"No security or correctness defects found in money conversion logic\",\n  \"findings\": []\n}\n",
+      "reported_output_tokens": 34,
+      "reported_input_tokens": 521,
+      "stop_reason": "stop",
+      "model": "qwen3:4b",
+      "hash": "a5adf734999b63f0ae32c70f888a029297d9be920737663b2f3a5b23aab9b1a0"
+    },
+    {
+      "index": 12,
+      "previous_hash": "a5adf734999b63f0ae32c70f888a029297d9be920737663b2f3a5b23aab9b1a0",
+      "kind": "review_validated",
+      "path": "billing/money.py",
+      "status": "no_finding",
+      "findings": [],
+      "reported_tokens": 34,
+      "summary": "No security or correctness defects found in money conversion logic",
+      "hash": "df922ca9065bbe248acdb7bfce779960cb546a480c935f5e7d4e9eb32d01f725"
+    },
+    {
+      "index": 13,
+      "previous_hash": "df922ca9065bbe248acdb7bfce779960cb546a480c935f5e7d4e9eb32d01f725",
+      "kind": "file_routed",
+      "path": "config/display.py",
+      "tier": "brief",
+      "signals": [
+        "Test, documentation, or display-only path"
+      ],
+      "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+      "source_chars": 117,
+      "output_cap": 256,
+      "hash": "5c5385ef75632f987c1641e6ceeaf8c2317721e4c93223ad03ac8c20338f3bc9"
+    },
+    {
+      "index": 14,
+      "previous_hash": "5c5385ef75632f987c1641e6ceeaf8c2317721e4c93223ad03ac8c20338f3bc9",
+      "kind": "model_request",
+      "path": "config/display.py",
+      "output_cap": 256,
+      "hash": "303cbaba7e6228f2d1d85b33a2880b45ef708816a9acf96d0bac2e65bf76bc70"
+    },
+    {
+      "index": 15,
+      "previous_hash": "303cbaba7e6228f2d1d85b33a2880b45ef708816a9acf96d0bac2e65bf76bc70",
+      "kind": "review_response",
+      "path": "config/display.py",
+      "response_text": "{\n  \"decision\": \"no_finding\",\n  \"summary\": \"No security or correctness defects found in display configuration\",\n  \"findings\": []\n}\n",
+      "reported_output_tokens": 33,
+      "reported_input_tokens": 467,
+      "stop_reason": "stop",
+      "model": "qwen3:4b",
+      "hash": "df7b842b09ade82ce350829556d0b9b09c60e0469ef92fe9b22b08fee58412ed"
+    },
+    {
+      "index": 16,
+      "previous_hash": "df7b842b09ade82ce350829556d0b9b09c60e0469ef92fe9b22b08fee58412ed",
+      "kind": "review_validated",
+      "path": "config/display.py",
+      "status": "no_finding",
+      "findings": [],
+      "reported_tokens": 33,
+      "summary": "No security or correctness defects found in display configuration",
+      "hash": "9216d0cfa5584aa8cf137e3e3eca0732e6528028dd3eb746d2e1dffd1b1a6477"
+    },
+    {
+      "index": 17,
+      "previous_hash": "9216d0cfa5584aa8cf137e3e3eca0732e6528028dd3eb746d2e1dffd1b1a6477",
+      "kind": "file_routed",
+      "path": "orders/receipt.py",
+      "tier": "brief",
+      "signals": [
+        "No configured priority signal"
+      ],
+      "source_hash": "48079965bfa969507d10dafe4c644bbb7871a6bde700e83fc32d6defd0fa94c4",
+      "source_chars": 159,
+      "output_cap": 256,
+      "hash": "80e77db356028e52453d7361049fa79a870b9a734b5c090decac619f16dcd5d1"
+    },
+    {
+      "index": 18,
+      "previous_hash": "80e77db356028e52453d7361049fa79a870b9a734b5c090decac619f16dcd5d1",
+      "kind": "model_request",
+      "path": "orders/receipt.py",
+      "output_cap": 256,
+      "hash": "bf2cc4e09596e031e117e8f7fbde3d3075d901f75be7898e3322f434e787693b"
+    },
+    {
+      "index": 19,
+      "previous_hash": "bf2cc4e09596e031e117e8f7fbde3d3075d901f75be7898e3322f434e787693b",
+      "kind": "review_response",
+      "path": "orders/receipt.py",
+      "response_text": "{\n  \"decision\": \"no_finding\",\n  \"summary\": \"No security defects found in receipt.py\",\n  \"findings\": []\n}\n",
+      "reported_output_tokens": 31,
+      "reported_input_tokens": 456,
+      "stop_reason": "stop",
+      "model": "qwen3:4b",
+      "hash": "9fcb9867942f9bedc826df24b51fce65e503672a3c465fce2953d5dbadfaf14e"
+    },
+    {
+      "index": 20,
+      "previous_hash": "9fcb9867942f9bedc826df24b51fce65e503672a3c465fce2953d5dbadfaf14e",
+      "kind": "review_validated",
+      "path": "orders/receipt.py",
+      "status": "no_finding",
+      "findings": [],
+      "reported_tokens": 31,
+      "summary": "No security defects found in receipt.py",
+      "hash": "0d239b7ff15fcb254abc0736597f3d5dab0245a4d2f5bbad644dcabf0aaf8d4c"
+    },
+    {
+      "index": 21,
+      "previous_hash": "0d239b7ff15fcb254abc0736597f3d5dab0245a4d2f5bbad644dcabf0aaf8d4c",
+      "kind": "file_routed",
+      "path": "tests/test_money.py",
+      "tier": "brief",
+      "signals": [
+        "Test, documentation, or display-only path"
+      ],
+      "source_hash": "8f960e91c0e0833c8159eb6f63290f0a56e071b6a966c8e619c32c19e7397560",
+      "source_chars": 134,
+      "output_cap": 256,
+      "hash": "472867534aa0bd2b58e9c1f60b451a02a52bd10850b667fd17967da4c0e5d01c"
+    },
+    {
+      "index": 22,
+      "previous_hash": "472867534aa0bd2b58e9c1f60b451a02a52bd10850b667fd17967da4c0e5d01c",
+      "kind": "model_request",
+      "path": "tests/test_money.py",
+      "output_cap": 256,
+      "hash": "7c04f90c871c7a616ba3fbef13775be7d4650a02b6280bcbc9806552cc393920"
+    },
+    {
+      "index": 23,
+      "previous_hash": "7c04f90c871c7a616ba3fbef13775be7d4650a02b6280bcbc9806552cc393920",
+      "kind": "review_response",
+      "path": "tests/test_money.py",
+      "response_text": "{\n  \"decision\": \"no_finding\",\n  \"summary\": \"No security or correctness defects found in test file\",\n  \"findings\": []\n}\n",
+      "reported_output_tokens": 33,
+      "reported_input_tokens": 470,
+      "stop_reason": "stop",
+      "model": "qwen3:4b",
+      "hash": "9957e3fce78f234b24d104c30424f4a446acba1693ae2f1356e3961b351f15d3"
+    },
+    {
+      "index": 24,
+      "previous_hash": "9957e3fce78f234b24d104c30424f4a446acba1693ae2f1356e3961b351f15d3",
+      "kind": "review_validated",
+      "path": "tests/test_money.py",
+      "status": "no_finding",
+      "findings": [],
+      "reported_tokens": 33,
+      "summary": "No security or correctness defects found in test file",
+      "hash": "ddb599ed71785604c7b3141fd825ff103ebe24c15c142453a0c45ba5efab4207"
+    },
+    {
+      "index": 25,
+      "previous_hash": "ddb599ed71785604c7b3141fd825ff103ebe24c15c142453a0c45ba5efab4207",
+      "kind": "review_completed",
+      "summary": {
+        "total_files": 6,
+        "flagged_files": 2,
+        "findings": 2,
+        "reviewed_files": 6,
+        "needs_review": 0,
+        "budget_respected": true
+      },
+      "usage": {
+        "output_tokens_reported": 368,
+        "input_tokens_reported": 3067,
+        "output_tokens_accounted": 368,
+        "output_tokens_reserved": 2816,
+        "input_chars": 1386,
+        "model_calls": 6,
+        "rule_calls": 0,
+        "unknown_usage_calls": 0
+      },
+      "hash": "546adb935be3d1d4dc7cb85a43932a3eeedd491692b27816fd7bb89adf2bb82b"
+    }
+  ],
+  "usage": {
+    "output_tokens_reported": 368,
+    "input_tokens_reported": 3067,
+    "output_tokens_accounted": 368,
+    "output_tokens_reserved": 2816,
+    "input_chars": 1386,
+    "model_calls": 6,
+    "rule_calls": 0,
+    "unknown_usage_calls": 0
+  },
+  "limitations": [
+    "A matching source quote validates location, not the truth of a finding.",
+    "Single-file context can miss cross-file defects.",
+    "No finding is not a safety certification; deferred files require human review.",
+    "Output limits do not cap input tokens, cost, or hardware compute."
+  ],
+  "duration_ms": 32830,
+  "summary": {
+    "total_files": 6,
+    "flagged_files": 2,
+    "findings": 2,
+    "reviewed_files": 6,
+    "needs_review": 0,
+    "budget_respected": true
+  },
+  "audit_valid": true
+}

@@ -150,7 +150,9 @@ class TestCodeReviewEnvClient(unittest.TestCase):
             steps = 0
             while not res.done and steps < 50:
                 steps += 1
-                res = env.step(CodeReviewAction(decision="flag", reasoning="test flag"))
+                obs = res.observation
+                decision = "flag" if obs.files_flagged < obs.review_budget else "skip"
+                res = env.step(CodeReviewAction(decision=decision, reasoning="test decision"))
             self.assertTrue(res.done)
             self.assertGreaterEqual(res.observation.f1_score, 0.0)
             self.assertLessEqual(res.observation.f1_score, 1.0)

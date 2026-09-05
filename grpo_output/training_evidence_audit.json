@@ -1,0 +1,46 @@
+{
+  "evidence_type": "saved_training_artifact_audit",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "adapter_present": true,
+  "adapter_tensor_count": 392,
+  "adapter_bytes": 36981856,
+  "adapter_dtypes": {
+    "BF16": 392
+  },
+  "trainer_global_step": 100,
+  "logged_reward_steps": 100,
+  "trainer_input_tokens_seen": 338438,
+  "mean_logged_reward": 0.0948270789720118,
+  "early_mean": 0.10182154528570897,
+  "late_mean": 0.10162973343668615,
+  "early_step_range": [
+    1,
+    33
+  ],
+  "late_step_range": [
+    67,
+    100
+  ],
+  "early_to_late_reward_delta": -0.00019181184902282433,
+  "reported_training_mean_matches_log": true,
+  "mean_completion_clipped_ratio": 0.375,
+  "reward_traces": 200,
+  "traces_with_environment_score": 13,
+  "traces_with_no_budget_prediction": 130,
+  "traces_with_zero_coupling": 200,
+  "traces_with_zero_metacognitive_score": 155,
+  "interpretation": [
+    "Adapter tensors and optimizer-step logs support that a training run was saved.",
+    "Training reward is not held-out performance or causal proof of learned allocation.",
+    "Missing environment scores and zero action coupling limit conclusions about tool-use learning.",
+    "Budget labels and text lengths are surface diagnostics, not access to internal cognition.",
+    "Hardware type and training wall time are not independently verified by this audit."
+  ],
+  "source_sha256": {
+    "grpo_output/adapter_config.json": "f314ac2d130a2a800b45f9d09d24f6b1e9a67fddbd1856b008238959c29ffe19",
+    "grpo_output/adapter_model.safetensors": "2c1acda35fa7330b9016d2bef97dba748028ba2dbaca53031bde45e9e177e79c",
+    "grpo_output/checkpoint-100/trainer_state.json": "59c6ccbbc7b9e89cf1eb6a0daed54e6c8820bef221da271761a93cfc3055f5a2",
+    "grpo_output/trace_log.jsonl": "b3e04b3145771920e989882708709a001ec6743dcb99797866221ef56edd6ead",
+    "grpo_output/training_stats.json": "7df1984adf6ac33388e0bf139b85316fc7f758a97b8349f37fb98f632c52f741"
+  }
+}

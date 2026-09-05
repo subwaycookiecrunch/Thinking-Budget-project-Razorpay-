@@ -20,6 +20,8 @@ grpo_output/runs/
 grpo_output/trainer_state.json
 *.bin
 *.safetensors
+# Include the supplied canonical adapter via the existing Git LFS rule.
+!grpo_output/adapter_model.safetensors
 *.pt
 *.pth
 

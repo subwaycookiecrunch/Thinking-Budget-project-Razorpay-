@@ -1,0 +1,4342 @@
+{
+  "schema_version": 1,
+  "evidence_type": "executed_review_lab_fixture_matrix",
+  "mode": "offline",
+  "model": "deterministic-rules-v1",
+  "protocol": "Same fixture source, sorted path input order, output allowance and engine; vary routing and max_files.",
+  "source_order": "Lexicographic file path order, as in a directory listing.",
+  "limitations": [
+    "Hand-authored development fixtures, not a held-out test set.",
+    "Localization metrics only: inspect findings to determine whether the intended defect was identified.",
+    "Duplicate safe controls across checkout/fixed fixtures are not independent examples.",
+    "Runs are sequential with model caching; timing is descriptive, not a controlled latency comparison."
+  ],
+  "engine_sha256": "32529628fb107605e8220105e45635c79b89e56315c2b583a5ba1ceb46b94a09",
+  "fixture_sha256": "391eb4f79caed41b27284adc851c14b4c6481aaa5cc2b01278cb835961bbbe0c",
+  "output_token_allowance": 2400,
+  "runs": [
+    {
+      "case_id": "checkout",
+      "strategy": "adaptive",
+      "max_files": 2,
+      "score": {
+        "target_files_flagged": 0,
+        "control_files_flagged": 0,
+        "target_files_not_flagged": 2,
+        "file_localization_precision": null,
+        "file_localization_recall": 0.0,
+        "expected_issues": {
+          "payments/checkout.py": "Retries after an ambiguous timeout can repeat a successful charge because no stable idempotency key is sent.",
+          "webhooks/handler.py": "The handler trusts caller-controlled payment events without authenticating the webhook signature."
+        },
+        "missed_target_files": [
+          "payments/checkout.py",
+          "webhooks/handler.py"
+        ],
+        "flagged_control_files": []
+      },
+      "report": {
+        "schema_version": 1,
+        "run_id": "7218adcf7cc7",
+        "created_at": "2026-09-05T14:20:32.929312+00:00",
+        "mode": "offline",
+        "model": "deterministic-rules-v1",
+        "strategy": "adaptive",
+        "fault_injection": "none",
+        "budget": {
+          "output_tokens": 2400,
+          "input_chars": 24000,
+          "max_files": 2,
+          "timeout_seconds": 60,
+          "run_seconds": 240
+        },
+        "provenance": {
+          "engine_sha256": "32529628fb107605e8220105e45635c79b89e56315c2b583a5ba1ceb46b94a09",
+          "prompt_sha256": "144333eb3ce667e9ab6b9019f80b2cc08b1f14170d88e33b7cccb719aca2d136",
+          "response_schema_sha256": "cb76662d991e3b6da21fed9377706852852e62b81e3c76874669e5c08116b70f",
+          "temperature": 0,
+          "seed": 42,
+          "thinking": false,
+          "context_window": 8192,
+          "model_digest": null,
+          "provider_injected_for_test": false
+        },
+        "patch_hash": "0b7d5d578b15c4354c4a0e5ac99b9462b3e4063218f972ea48e9b9d5147aa12c",
+        "files": [
+          {
+            "path": "payments/checkout.py",
+            "source_hash": "2306d62730a20d232953bd5ab8064fdc6b036f9124ce2cc044b3ac2fd77b5ff2",
+            "source_chars": 467,
+            "risk_score": 10,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access",
+              "Retry or repeated execution"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 768,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 5
+          },
+          {
+            "path": "webhooks/handler.py",
+            "source_hash": "4922fe8961a221450559ec80ab70472fbbbcacb5da99c960e87ca8913b59439a",
+            "source_chars": 223,
+            "risk_score": 7,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "Untrusted input boundary"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 768,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "billing/money.py",
+            "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+            "source_chars": 286,
+            "risk_score": 5,
+            "tier": "standard",
+            "signals": [
+              "Money, identity, or tenant boundary"
+            ],
+            "requested_tokens": 512,
+            "output_cap": 512,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "config/display.py",
+            "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+            "source_chars": 117,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 256,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "orders/receipt.py",
+            "source_hash": "48079965bfa969507d10dafe4c644bbb7871a6bde700e83fc32d6defd0fa94c4",
+            "source_chars": 159,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 256,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "tests/test_money.py",
+            "source_hash": "8f960e91c0e0833c8159eb6f63290f0a56e071b6a966c8e619c32c19e7397560",
+            "source_chars": 134,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 256,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          }
+        ],
+        "events": [
+          {
+            "index": 0,
+            "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "kind": "review_started",
+            "mode": "offline",
+            "strategy": "adaptive",
+            "budget": {
+              "output_tokens": 2400,
+              "input_chars": 24000,
+              "max_files": 2,
+              "timeout_seconds": 60,
+              "run_seconds": 240
+            },
+            "patch_hash": "0b7d5d578b15c4354c4a0e5ac99b9462b3e4063218f972ea48e9b9d5147aa12c",
+            "hash": "c8674f34144aeb78b4090f1a6d8add6d7a341ea2ca2e88653039b4df63064f61"
+          },
+          {
+            "index": 1,
+            "previous_hash": "c8674f34144aeb78b4090f1a6d8add6d7a341ea2ca2e88653039b4df63064f61",
+            "kind": "file_routed",
+            "path": "payments/checkout.py",
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access",
+              "Retry or repeated execution"
+            ],
+            "source_hash": "2306d62730a20d232953bd5ab8064fdc6b036f9124ce2cc044b3ac2fd77b5ff2",
+            "source_chars": 467,
+            "output_cap": 0,
+            "hash": "cf35663788d6463ac5e23c058ee84ad7620cceaa059f25fba226433ca8db2859"
+          },
+          {
+            "index": 2,
+            "previous_hash": "cf35663788d6463ac5e23c058ee84ad7620cceaa059f25fba226433ca8db2859",
+            "kind": "review_response",
+            "path": "payments/checkout.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "236ee5a36b41bcbacf949998b50520ce90723d3746d9486ff656b36b8f590ea4"
+          },
+          {
+            "index": 3,
+            "previous_hash": "236ee5a36b41bcbacf949998b50520ce90723d3746d9486ff656b36b8f590ea4",
+            "kind": "review_validated",
+            "path": "payments/checkout.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "135b4c5806f4afaefc5db079c8c476cc0f7977880472b2273e5b0b41f3294367"
+          },
+          {
+            "index": 4,
+            "previous_hash": "135b4c5806f4afaefc5db079c8c476cc0f7977880472b2273e5b0b41f3294367",
+            "kind": "file_routed",
+            "path": "webhooks/handler.py",
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "Untrusted input boundary"
+            ],
+            "source_hash": "4922fe8961a221450559ec80ab70472fbbbcacb5da99c960e87ca8913b59439a",
+            "source_chars": 223,
+            "output_cap": 0,
+            "hash": "44711f621207a0f406935fbc5cde27bc19084fa4a553991a510f3b48b4e6ab07"
+          },
+          {
+            "index": 5,
+            "previous_hash": "44711f621207a0f406935fbc5cde27bc19084fa4a553991a510f3b48b4e6ab07",
+            "kind": "review_response",
+            "path": "webhooks/handler.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "60cd0e65607499b725a197084e4ddc4330ce93ac961d77c6aafab33aed9b48dc"
+          },
+          {
+            "index": 6,
+            "previous_hash": "60cd0e65607499b725a197084e4ddc4330ce93ac961d77c6aafab33aed9b48dc",
+            "kind": "review_validated",
+            "path": "webhooks/handler.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "7db7c4db2589745881926fc6e00af233fb0b9f0a619e7bf79e7ed94337cb9b5e"
+          },
+          {
+            "index": 7,
+            "previous_hash": "7db7c4db2589745881926fc6e00af233fb0b9f0a619e7bf79e7ed94337cb9b5e",
+            "kind": "file_deferred",
+            "path": "billing/money.py",
+            "reason": "File review limit reached.",
+            "hash": "8049f13d85161393f1e5da08e6dd6fa676ce0258c24ad0b4d86d6b54a7529a8c"
+          },
+          {
+            "index": 8,
+            "previous_hash": "8049f13d85161393f1e5da08e6dd6fa676ce0258c24ad0b4d86d6b54a7529a8c",
+            "kind": "file_deferred",
+            "path": "config/display.py",
+            "reason": "File review limit reached.",
+            "hash": "79d2066aac49e80cc7b6c45b9f719f6efe51a708cff9b108da21238cbf719463"
+          },
+          {
+            "index": 9,
+            "previous_hash": "79d2066aac49e80cc7b6c45b9f719f6efe51a708cff9b108da21238cbf719463",
+            "kind": "file_deferred",
+            "path": "orders/receipt.py",
+            "reason": "File review limit reached.",
+            "hash": "dd4eaa2ad64e0f01141b6ca0817926588e9d164a4f157fa391cab1c0dc198dca"
+          },
+          {
+            "index": 10,
+            "previous_hash": "dd4eaa2ad64e0f01141b6ca0817926588e9d164a4f157fa391cab1c0dc198dca",
+            "kind": "file_deferred",
+            "path": "tests/test_money.py",
+            "reason": "File review limit reached.",
+            "hash": "90b0e807c05b45a5a1566817e289b17f6c55ca095714ff0c37dc21dea5fcaa54"
+          },
+          {
+            "index": 11,
+            "previous_hash": "90b0e807c05b45a5a1566817e289b17f6c55ca095714ff0c37dc21dea5fcaa54",
+            "kind": "review_completed",
+            "summary": {
+              "total_files": 6,
+              "flagged_files": 0,
+              "findings": 0,
+              "reviewed_files": 2,
+              "needs_review": 4,
+              "budget_respected": true
+            },
+            "usage": {
+              "output_tokens_reported": 0,
+              "input_tokens_reported": 0,
+              "output_tokens_accounted": 0,
+              "output_tokens_reserved": 0,
+              "input_chars": 690,
+              "model_calls": 0,
+              "rule_calls": 2,
+              "unknown_usage_calls": 0
+            },
+            "hash": "d5d3815d10a0b4ffa983c8defb448551f0f0b43d1f0b25d56a07a40a65100729"
+          }
+        ],
+        "usage": {
+          "output_tokens_reported": 0,
+          "input_tokens_reported": 0,
+          "output_tokens_accounted": 0,
+          "output_tokens_reserved": 0,
+          "input_chars": 690,
+          "model_calls": 0,
+          "rule_calls": 2,
+          "unknown_usage_calls": 0
+        },
+        "limitations": [
+          "A matching source quote validates location, not the truth of a finding.",
+          "Single-file context can miss cross-file defects.",
+          "No finding is not a safety certification; deferred files require human review.",
+          "Output limits do not cap input tokens, cost, or hardware compute."
+        ],
+        "duration_ms": 6,
+        "summary": {
+          "total_files": 6,
+          "flagged_files": 0,
+          "findings": 0,
+          "reviewed_files": 2,
+          "needs_review": 4,
+          "budget_respected": true
+        },
+        "audit_valid": true
+      }
+    },
+    {
+      "case_id": "checkout_fixed",
+      "strategy": "adaptive",
+      "max_files": 2,
+      "score": {
+        "target_files_flagged": 0,
+        "control_files_flagged": 0,
+        "target_files_not_flagged": 0,
+        "file_localization_precision": null,
+        "file_localization_recall": null,
+        "expected_issues": {},
+        "missed_target_files": [],
+        "flagged_control_files": []
+      },
+      "report": {
+        "schema_version": 1,
+        "run_id": "16548e90ad4a",
+        "created_at": "2026-09-05T14:20:32.935950+00:00",
+        "mode": "offline",
+        "model": "deterministic-rules-v1",
+        "strategy": "adaptive",
+        "fault_injection": "none",
+        "budget": {
+          "output_tokens": 2400,
+          "input_chars": 24000,
+          "max_files": 2,
+          "timeout_seconds": 60,
+          "run_seconds": 240
+        },
+        "provenance": {
+          "engine_sha256": "32529628fb107605e8220105e45635c79b89e56315c2b583a5ba1ceb46b94a09",
+          "prompt_sha256": "144333eb3ce667e9ab6b9019f80b2cc08b1f14170d88e33b7cccb719aca2d136",
+          "response_schema_sha256": "cb76662d991e3b6da21fed9377706852852e62b81e3c76874669e5c08116b70f",
+          "temperature": 0,
+          "seed": 42,
+          "thinking": false,
+          "context_window": 8192,
+          "model_digest": null,
+          "provider_injected_for_test": false
+        },
+        "patch_hash": "adb839af7c30caaeed76d7418a4543b3dce92a6e470591d54df4a2d298e1f970",
+        "files": [
+          {
+            "path": "payments/checkout.py",
+            "source_hash": "ecb24f1377cfade0b1d4e3b4e0a7e87ed4d4265c436cec91c9c4404aad834408",
+            "source_chars": 518,
+            "risk_score": 10,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access",
+              "Retry or repeated execution"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 768,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "webhooks/handler.py",
+            "source_hash": "12b3619f0449d36e585b0f87a058c07640bdcb3655320c985fc2b8c948d0c6a1",
+            "source_chars": 550,
+            "risk_score": 7,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "Untrusted input boundary"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 768,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "billing/money.py",
+            "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+            "source_chars": 286,
+            "risk_score": 5,
+            "tier": "standard",
+            "signals": [
+              "Money, identity, or tenant boundary"
+            ],
+            "requested_tokens": 512,
+            "output_cap": 512,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "config/display.py",
+            "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+            "source_chars": 117,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 256,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "orders/receipt.py",
+            "source_hash": "48079965bfa969507d10dafe4c644bbb7871a6bde700e83fc32d6defd0fa94c4",
+            "source_chars": 159,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 256,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "tests/test_money.py",
+            "source_hash": "8f960e91c0e0833c8159eb6f63290f0a56e071b6a966c8e619c32c19e7397560",
+            "source_chars": 134,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 256,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          }
+        ],
+        "events": [
+          {
+            "index": 0,
+            "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "kind": "review_started",
+            "mode": "offline",
+            "strategy": "adaptive",
+            "budget": {
+              "output_tokens": 2400,
+              "input_chars": 24000,
+              "max_files": 2,
+              "timeout_seconds": 60,
+              "run_seconds": 240
+            },
+            "patch_hash": "adb839af7c30caaeed76d7418a4543b3dce92a6e470591d54df4a2d298e1f970",
+            "hash": "08f24a9b5a7d4c6677f84d1b7b9f5405a84dbbb85e78bf398b2c0166b900e8c7"
+          },
+          {
+            "index": 1,
+            "previous_hash": "08f24a9b5a7d4c6677f84d1b7b9f5405a84dbbb85e78bf398b2c0166b900e8c7",
+            "kind": "file_routed",
+            "path": "payments/checkout.py",
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access",
+              "Retry or repeated execution"
+            ],
+            "source_hash": "ecb24f1377cfade0b1d4e3b4e0a7e87ed4d4265c436cec91c9c4404aad834408",
+            "source_chars": 518,
+            "output_cap": 0,
+            "hash": "ff3072c6626b5968a2f6cb097ee0cea55a02573573ba8547b4784074f6c5622a"
+          },
+          {
+            "index": 2,
+            "previous_hash": "ff3072c6626b5968a2f6cb097ee0cea55a02573573ba8547b4784074f6c5622a",
+            "kind": "review_response",
+            "path": "payments/checkout.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "7feaf5fd9c7373c1861e9e6c83d2c5e8966652405b058b1fbc007894454ac7c0"
+          },
+          {
+            "index": 3,
+            "previous_hash": "7feaf5fd9c7373c1861e9e6c83d2c5e8966652405b058b1fbc007894454ac7c0",
+            "kind": "review_validated",
+            "path": "payments/checkout.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "958088d0c5def8aa2b74797be0f90293fdbf5d62cf50f721ec21e1a15d8798af"
+          },
+          {
+            "index": 4,
+            "previous_hash": "958088d0c5def8aa2b74797be0f90293fdbf5d62cf50f721ec21e1a15d8798af",
+            "kind": "file_routed",
+            "path": "webhooks/handler.py",
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "Untrusted input boundary"
+            ],
+            "source_hash": "12b3619f0449d36e585b0f87a058c07640bdcb3655320c985fc2b8c948d0c6a1",
+            "source_chars": 550,
+            "output_cap": 0,
+            "hash": "2d07c8339413789dafe21ade28a2216e7cf27bb97d0a13b9c4422321976b0a20"
+          },
+          {
+            "index": 5,
+            "previous_hash": "2d07c8339413789dafe21ade28a2216e7cf27bb97d0a13b9c4422321976b0a20",
+            "kind": "review_response",
+            "path": "webhooks/handler.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "a86c2ee23c5109cffb94bcb27968b3529690159ef0d1fcc29d6fdb00676c7bae"
+          },
+          {
+            "index": 6,
+            "previous_hash": "a86c2ee23c5109cffb94bcb27968b3529690159ef0d1fcc29d6fdb00676c7bae",
+            "kind": "review_validated",
+            "path": "webhooks/handler.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "91522e4e2ee0029f95aaf7532ef45c579134d4739b45463eb68fdce47ba33efe"
+          },
+          {
+            "index": 7,
+            "previous_hash": "91522e4e2ee0029f95aaf7532ef45c579134d4739b45463eb68fdce47ba33efe",
+            "kind": "file_deferred",
+            "path": "billing/money.py",
+            "reason": "File review limit reached.",
+            "hash": "5355404e5b93a95d7cbddadef6fd10bf2cf495b2b29e62eb21d514e390c2a9e2"
+          },
+          {
+            "index": 8,
+            "previous_hash": "5355404e5b93a95d7cbddadef6fd10bf2cf495b2b29e62eb21d514e390c2a9e2",
+            "kind": "file_deferred",
+            "path": "config/display.py",
+            "reason": "File review limit reached.",
+            "hash": "944c9dacfe149636897489f3e9842f1e9ea8204e74f85b56af7b2ccab10d16d2"
+          },
+          {
+            "index": 9,
+            "previous_hash": "944c9dacfe149636897489f3e9842f1e9ea8204e74f85b56af7b2ccab10d16d2",
+            "kind": "file_deferred",
+            "path": "orders/receipt.py",
+            "reason": "File review limit reached.",
+            "hash": "0d967257002a2bb3a99abc118cb51e196204b118368eb704d9fd914c22ae5c2b"
+          },
+          {
+            "index": 10,
+            "previous_hash": "0d967257002a2bb3a99abc118cb51e196204b118368eb704d9fd914c22ae5c2b",
+            "kind": "file_deferred",
+            "path": "tests/test_money.py",
+            "reason": "File review limit reached.",
+            "hash": "28ded19034a8c35b1f33822bd93544c22bd8f619a20a402b696d164729d2920f"
+          },
+          {
+            "index": 11,
+            "previous_hash": "28ded19034a8c35b1f33822bd93544c22bd8f619a20a402b696d164729d2920f",
+            "kind": "review_completed",
+            "summary": {
+              "total_files": 6,
+              "flagged_files": 0,
+              "findings": 0,
+              "reviewed_files": 2,
+              "needs_review": 4,
+              "budget_respected": true
+            },
+            "usage": {
+              "output_tokens_reported": 0,
+              "input_tokens_reported": 0,
+              "output_tokens_accounted": 0,
+              "output_tokens_reserved": 0,
+              "input_chars": 1068,
+              "model_calls": 0,
+              "rule_calls": 2,
+              "unknown_usage_calls": 0
+            },
+            "hash": "4a34c81c983e1b2923e7bcf230f25332a0072619d31c06da157cba107824b4a7"
+          }
+        ],
+        "usage": {
+          "output_tokens_reported": 0,
+          "input_tokens_reported": 0,
+          "output_tokens_accounted": 0,
+          "output_tokens_reserved": 0,
+          "input_chars": 1068,
+          "model_calls": 0,
+          "rule_calls": 2,
+          "unknown_usage_calls": 0
+        },
+        "limitations": [
+          "A matching source quote validates location, not the truth of a finding.",
+          "Single-file context can miss cross-file defects.",
+          "No finding is not a safety certification; deferred files require human review.",
+          "Output limits do not cap input tokens, cost, or hardware compute."
+        ],
+        "duration_ms": 1,
+        "summary": {
+          "total_files": 6,
+          "flagged_files": 0,
+          "findings": 0,
+          "reviewed_files": 2,
+          "needs_review": 4,
+          "budget_respected": true
+        },
+        "audit_valid": true
+      }
+    },
+    {
+      "case_id": "tenant",
+      "strategy": "adaptive",
+      "max_files": 2,
+      "score": {
+        "target_files_flagged": 0,
+        "control_files_flagged": 0,
+        "target_files_not_flagged": 1,
+        "file_localization_precision": null,
+        "file_localization_recall": 0.0,
+        "expected_issues": {
+          "api/invoices.py": "Any authenticated user can fetch another tenant's invoice because the query lacks tenant ownership filtering."
+        },
+        "missed_target_files": [
+          "api/invoices.py"
+        ],
+        "flagged_control_files": []
+      },
+      "report": {
+        "schema_version": 1,
+        "run_id": "0a3c7ed54348",
+        "created_at": "2026-09-05T14:20:32.937383+00:00",
+        "mode": "offline",
+        "model": "deterministic-rules-v1",
+        "strategy": "adaptive",
+        "fault_injection": "none",
+        "budget": {
+          "output_tokens": 2400,
+          "input_chars": 24000,
+          "max_files": 2,
+          "timeout_seconds": 60,
+          "run_seconds": 240
+        },
+        "provenance": {
+          "engine_sha256": "32529628fb107605e8220105e45635c79b89e56315c2b583a5ba1ceb46b94a09",
+          "prompt_sha256": "144333eb3ce667e9ab6b9019f80b2cc08b1f14170d88e33b7cccb719aca2d136",
+          "response_schema_sha256": "cb76662d991e3b6da21fed9377706852852e62b81e3c76874669e5c08116b70f",
+          "temperature": 0,
+          "seed": 42,
+          "thinking": false,
+          "context_window": 8192,
+          "model_digest": null,
+          "provider_injected_for_test": false
+        },
+        "patch_hash": "5a17beb8b5fb361c2e2dec52344a04a993df8cd6d8853d1deed86bc07f520004",
+        "files": [
+          {
+            "path": "api/invoices.py",
+            "source_hash": "d543c50b1069e0277767b60a51f67fa6df5e3ac8e57672debf673855433dd01b",
+            "source_chars": 275,
+            "risk_score": 8,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 768,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "api/profile.py",
+            "source_hash": "73a0d1642af08c770b1546673f7baaee70e328afb61b178438e9e7234a2de313",
+            "source_chars": 217,
+            "risk_score": 4,
+            "tier": "standard",
+            "signals": [
+              "External side effect or database access"
+            ],
+            "requested_tokens": 512,
+            "output_cap": 512,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "tests/test_pagination.py",
+            "source_hash": "d45ac68a9079522243ac6bd2bb2f2f75a547baa34378165237dd94b16efdfc42",
+            "source_chars": 120,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 256,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "utils/pagination.py",
+            "source_hash": "99d55a624a3662f3ecbfd6820a62ab7d1e8e693b47b427a007ad98d7ebf586f7",
+            "source_chars": 157,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 256,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          }
+        ],
+        "events": [
+          {
+            "index": 0,
+            "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "kind": "review_started",
+            "mode": "offline",
+            "strategy": "adaptive",
+            "budget": {
+              "output_tokens": 2400,
+              "input_chars": 24000,
+              "max_files": 2,
+              "timeout_seconds": 60,
+              "run_seconds": 240
+            },
+            "patch_hash": "5a17beb8b5fb361c2e2dec52344a04a993df8cd6d8853d1deed86bc07f520004",
+            "hash": "539b28ebeb9a1ed71fa34b0f0d8666c25852c8ef5b6c7ba224e28dc74277be2d"
+          },
+          {
+            "index": 1,
+            "previous_hash": "539b28ebeb9a1ed71fa34b0f0d8666c25852c8ef5b6c7ba224e28dc74277be2d",
+            "kind": "file_routed",
+            "path": "api/invoices.py",
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access"
+            ],
+            "source_hash": "d543c50b1069e0277767b60a51f67fa6df5e3ac8e57672debf673855433dd01b",
+            "source_chars": 275,
+            "output_cap": 0,
+            "hash": "5b429c4b6254de2adcd786b298eaea0b837db7b86e99713306cc60f707cbf637"
+          },
+          {
+            "index": 2,
+            "previous_hash": "5b429c4b6254de2adcd786b298eaea0b837db7b86e99713306cc60f707cbf637",
+            "kind": "review_response",
+            "path": "api/invoices.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "00c5ebbbeb7db63f2b9c43e2910c8dc3bdf9c38931c79a1293972409b7c2c3de"
+          },
+          {
+            "index": 3,
+            "previous_hash": "00c5ebbbeb7db63f2b9c43e2910c8dc3bdf9c38931c79a1293972409b7c2c3de",
+            "kind": "review_validated",
+            "path": "api/invoices.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "fd69ede553b3d1af02dad5e7f5de66c303af3a861eca77260736b5ef1155df0c"
+          },
+          {
+            "index": 4,
+            "previous_hash": "fd69ede553b3d1af02dad5e7f5de66c303af3a861eca77260736b5ef1155df0c",
+            "kind": "file_routed",
+            "path": "api/profile.py",
+            "tier": "standard",
+            "signals": [
+              "External side effect or database access"
+            ],
+            "source_hash": "73a0d1642af08c770b1546673f7baaee70e328afb61b178438e9e7234a2de313",
+            "source_chars": 217,
+            "output_cap": 0,
+            "hash": "fd6dff5c48ab710234f337d528b8cd4001ed06611b8cbd7c0382df1d1ad82357"
+          },
+          {
+            "index": 5,
+            "previous_hash": "fd6dff5c48ab710234f337d528b8cd4001ed06611b8cbd7c0382df1d1ad82357",
+            "kind": "review_response",
+            "path": "api/profile.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "6e571f888451bd6489b2dfdc5af64e53a640c9c03301bf18ccc068eb72b3d03a"
+          },
+          {
+            "index": 6,
+            "previous_hash": "6e571f888451bd6489b2dfdc5af64e53a640c9c03301bf18ccc068eb72b3d03a",
+            "kind": "review_validated",
+            "path": "api/profile.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "8de0f39ff571db3d12c1b8528511ce5cd5c131d475d4f224a7a0c0fc5efba5ff"
+          },
+          {
+            "index": 7,
+            "previous_hash": "8de0f39ff571db3d12c1b8528511ce5cd5c131d475d4f224a7a0c0fc5efba5ff",
+            "kind": "file_deferred",
+            "path": "tests/test_pagination.py",
+            "reason": "File review limit reached.",
+            "hash": "50f17d318cc7c401c8399e318a1a9661a618cd03788ebc3f0b2fcb740a853cac"
+          },
+          {
+            "index": 8,
+            "previous_hash": "50f17d318cc7c401c8399e318a1a9661a618cd03788ebc3f0b2fcb740a853cac",
+            "kind": "file_deferred",
+            "path": "utils/pagination.py",
+            "reason": "File review limit reached.",
+            "hash": "3537ff65ad09f7a22b5693f4fd465987fcf212778e80a71eab259a5ec8e7235a"
+          },
+          {
+            "index": 9,
+            "previous_hash": "3537ff65ad09f7a22b5693f4fd465987fcf212778e80a71eab259a5ec8e7235a",
+            "kind": "review_completed",
+            "summary": {
+              "total_files": 4,
+              "flagged_files": 0,
+              "findings": 0,
+              "reviewed_files": 2,
+              "needs_review": 2,
+              "budget_respected": true
+            },
+            "usage": {
+              "output_tokens_reported": 0,
+              "input_tokens_reported": 0,
+              "output_tokens_accounted": 0,
+              "output_tokens_reserved": 0,
+              "input_chars": 492,
+              "model_calls": 0,
+              "rule_calls": 2,
+              "unknown_usage_calls": 0
+            },
+            "hash": "b61ee2f6b0fe8eabc7f05e15c91cbf16196078495c688e81558bb09851627bf9"
+          }
+        ],
+        "usage": {
+          "output_tokens_reported": 0,
+          "input_tokens_reported": 0,
+          "output_tokens_accounted": 0,
+          "output_tokens_reserved": 0,
+          "input_chars": 492,
+          "model_calls": 0,
+          "rule_calls": 2,
+          "unknown_usage_calls": 0
+        },
+        "limitations": [
+          "A matching source quote validates location, not the truth of a finding.",
+          "Single-file context can miss cross-file defects.",
+          "No finding is not a safety certification; deferred files require human review.",
+          "Output limits do not cap input tokens, cost, or hardware compute."
+        ],
+        "duration_ms": 0,
+        "summary": {
+          "total_files": 4,
+          "flagged_files": 0,
+          "findings": 0,
+          "reviewed_files": 2,
+          "needs_review": 2,
+          "budget_respected": true
+        },
+        "audit_valid": true
+      }
+    },
+    {
+      "case_id": "checkout",
+      "strategy": "uniform",
+      "max_files": 2,
+      "score": {
+        "target_files_flagged": 0,
+        "control_files_flagged": 0,
+        "target_files_not_flagged": 2,
+        "file_localization_precision": null,
+        "file_localization_recall": 0.0,
+        "expected_issues": {
+          "payments/checkout.py": "Retries after an ambiguous timeout can repeat a successful charge because no stable idempotency key is sent.",
+          "webhooks/handler.py": "The handler trusts caller-controlled payment events without authenticating the webhook signature."
+        },
+        "missed_target_files": [
+          "payments/checkout.py",
+          "webhooks/handler.py"
+        ],
+        "flagged_control_files": []
+      },
+      "report": {
+        "schema_version": 1,
+        "run_id": "4cc4b5c8111e",
+        "created_at": "2026-09-05T14:20:32.938749+00:00",
+        "mode": "offline",
+        "model": "deterministic-rules-v1",
+        "strategy": "uniform",
+        "fault_injection": "none",
+        "budget": {
+          "output_tokens": 2400,
+          "input_chars": 24000,
+          "max_files": 2,
+          "timeout_seconds": 60,
+          "run_seconds": 240
+        },
+        "provenance": {
+          "engine_sha256": "32529628fb107605e8220105e45635c79b89e56315c2b583a5ba1ceb46b94a09",
+          "prompt_sha256": "144333eb3ce667e9ab6b9019f80b2cc08b1f14170d88e33b7cccb719aca2d136",
+          "response_schema_sha256": "cb76662d991e3b6da21fed9377706852852e62b81e3c76874669e5c08116b70f",
+          "temperature": 0,
+          "seed": 42,
+          "thinking": false,
+          "context_window": 8192,
+          "model_digest": null,
+          "provider_injected_for_test": false
+        },
+        "patch_hash": "0b7d5d578b15c4354c4a0e5ac99b9462b3e4063218f972ea48e9b9d5147aa12c",
+        "files": [
+          {
+            "path": "billing/money.py",
+            "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+            "source_chars": 286,
+            "risk_score": 5,
+            "tier": "standard",
+            "signals": [
+              "Money, identity, or tenant boundary"
+            ],
+            "requested_tokens": 512,
+            "output_cap": 1200,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "config/display.py",
+            "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+            "source_chars": 117,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 1200,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "orders/receipt.py",
+            "source_hash": "48079965bfa969507d10dafe4c644bbb7871a6bde700e83fc32d6defd0fa94c4",
+            "source_chars": 159,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 1200,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "payments/checkout.py",
+            "source_hash": "2306d62730a20d232953bd5ab8064fdc6b036f9124ce2cc044b3ac2fd77b5ff2",
+            "source_chars": 467,
+            "risk_score": 10,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access",
+              "Retry or repeated execution"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 1200,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "tests/test_money.py",
+            "source_hash": "8f960e91c0e0833c8159eb6f63290f0a56e071b6a966c8e619c32c19e7397560",
+            "source_chars": 134,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 1200,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "webhooks/handler.py",
+            "source_hash": "4922fe8961a221450559ec80ab70472fbbbcacb5da99c960e87ca8913b59439a",
+            "source_chars": 223,
+            "risk_score": 7,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "Untrusted input boundary"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 1200,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          }
+        ],
+        "events": [
+          {
+            "index": 0,
+            "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "kind": "review_started",
+            "mode": "offline",
+            "strategy": "uniform",
+            "budget": {
+              "output_tokens": 2400,
+              "input_chars": 24000,
+              "max_files": 2,
+              "timeout_seconds": 60,
+              "run_seconds": 240
+            },
+            "patch_hash": "0b7d5d578b15c4354c4a0e5ac99b9462b3e4063218f972ea48e9b9d5147aa12c",
+            "hash": "f42cf3f3f69e3de8fc25470f9fbee567e718f93406c74710afb452c04dab25c2"
+          },
+          {
+            "index": 1,
+            "previous_hash": "f42cf3f3f69e3de8fc25470f9fbee567e718f93406c74710afb452c04dab25c2",
+            "kind": "file_routed",
+            "path": "billing/money.py",
+            "tier": "standard",
+            "signals": [
+              "Money, identity, or tenant boundary"
+            ],
+            "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+            "source_chars": 286,
+            "output_cap": 0,
+            "hash": "bf1b485da0ce69b05b32ca3cc9bd45db715598a4fa10dc0b088f86faf5ca6a93"
+          },
+          {
+            "index": 2,
+            "previous_hash": "bf1b485da0ce69b05b32ca3cc9bd45db715598a4fa10dc0b088f86faf5ca6a93",
+            "kind": "review_response",
+            "path": "billing/money.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "80ef2a4a8a1b377fe600af9f7310ebe22038acc09726f5fb1ab5ed3518bca2cc"
+          },
+          {
+            "index": 3,
+            "previous_hash": "80ef2a4a8a1b377fe600af9f7310ebe22038acc09726f5fb1ab5ed3518bca2cc",
+            "kind": "review_validated",
+            "path": "billing/money.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "c7740a716cdc9520ddc9b86d8ba425bd55d0c5dc77304f804db30fc1b9ccd5fc"
+          },
+          {
+            "index": 4,
+            "previous_hash": "c7740a716cdc9520ddc9b86d8ba425bd55d0c5dc77304f804db30fc1b9ccd5fc",
+            "kind": "file_routed",
+            "path": "config/display.py",
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+            "source_chars": 117,
+            "output_cap": 0,
+            "hash": "343eebbc8fadcc3a69e7bf50ed94bea2bbb395ac635d2e25a95a662c57a62fbc"
+          },
+          {
+            "index": 5,
+            "previous_hash": "343eebbc8fadcc3a69e7bf50ed94bea2bbb395ac635d2e25a95a662c57a62fbc",
+            "kind": "review_response",
+            "path": "config/display.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "aa1015a7c90d37592e018fbeec5e13af0ed4a348a87e4819da067a85283393f0"
+          },
+          {
+            "index": 6,
+            "previous_hash": "aa1015a7c90d37592e018fbeec5e13af0ed4a348a87e4819da067a85283393f0",
+            "kind": "review_validated",
+            "path": "config/display.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "20c377216688dde97a2dc9b93f564003285fc7a05c013c9bcd7739f3fe934687"
+          },
+          {
+            "index": 7,
+            "previous_hash": "20c377216688dde97a2dc9b93f564003285fc7a05c013c9bcd7739f3fe934687",
+            "kind": "file_deferred",
+            "path": "orders/receipt.py",
+            "reason": "File review limit reached.",
+            "hash": "c92e4e1d7ef591cd0f30def6a68872577752bf4c1803274e7cedf315a10c41eb"
+          },
+          {
+            "index": 8,
+            "previous_hash": "c92e4e1d7ef591cd0f30def6a68872577752bf4c1803274e7cedf315a10c41eb",
+            "kind": "file_deferred",
+            "path": "payments/checkout.py",
+            "reason": "File review limit reached.",
+            "hash": "10cee3ffadb5b55283f08e56d231cd7ab4eb879478b4a58aec0ce8e7942c8a51"
+          },
+          {
+            "index": 9,
+            "previous_hash": "10cee3ffadb5b55283f08e56d231cd7ab4eb879478b4a58aec0ce8e7942c8a51",
+            "kind": "file_deferred",
+            "path": "tests/test_money.py",
+            "reason": "File review limit reached.",
+            "hash": "907106efa40424179e7ef8f7fcc67b9f2728b606dda59d34a26ff05ec43666af"
+          },
+          {
+            "index": 10,
+            "previous_hash": "907106efa40424179e7ef8f7fcc67b9f2728b606dda59d34a26ff05ec43666af",
+            "kind": "file_deferred",
+            "path": "webhooks/handler.py",
+            "reason": "File review limit reached.",
+            "hash": "6d48fb5ea6acbf1690441c8ba2946f1dbfd0ee04d718e36c1aa3178f07c94028"
+          },
+          {
+            "index": 11,
+            "previous_hash": "6d48fb5ea6acbf1690441c8ba2946f1dbfd0ee04d718e36c1aa3178f07c94028",
+            "kind": "review_completed",
+            "summary": {
+              "total_files": 6,
+              "flagged_files": 0,
+              "findings": 0,
+              "reviewed_files": 2,
+              "needs_review": 4,
+              "budget_respected": true
+            },
+            "usage": {
+              "output_tokens_reported": 0,
+              "input_tokens_reported": 0,
+              "output_tokens_accounted": 0,
+              "output_tokens_reserved": 0,
+              "input_chars": 403,
+              "model_calls": 0,
+              "rule_calls": 2,
+              "unknown_usage_calls": 0
+            },
+            "hash": "02b870522de87a9bdc2533ec4f33828ea6a50f4a0abe15ef03807681736f2500"
+          }
+        ],
+        "usage": {
+          "output_tokens_reported": 0,
+          "input_tokens_reported": 0,
+          "output_tokens_accounted": 0,
+          "output_tokens_reserved": 0,
+          "input_chars": 403,
+          "model_calls": 0,
+          "rule_calls": 2,
+          "unknown_usage_calls": 0
+        },
+        "limitations": [
+          "A matching source quote validates location, not the truth of a finding.",
+          "Single-file context can miss cross-file defects.",
+          "No finding is not a safety certification; deferred files require human review.",
+          "Output limits do not cap input tokens, cost, or hardware compute."
+        ],
+        "duration_ms": 0,
+        "summary": {
+          "total_files": 6,
+          "flagged_files": 0,
+          "findings": 0,
+          "reviewed_files": 2,
+          "needs_review": 4,
+          "budget_respected": true
+        },
+        "audit_valid": true
+      }
+    },
+    {
+      "case_id": "checkout_fixed",
+      "strategy": "uniform",
+      "max_files": 2,
+      "score": {
+        "target_files_flagged": 0,
+        "control_files_flagged": 0,
+        "target_files_not_flagged": 0,
+        "file_localization_precision": null,
+        "file_localization_recall": null,
+        "expected_issues": {},
+        "missed_target_files": [],
+        "flagged_control_files": []
+      },
+      "report": {
+        "schema_version": 1,
+        "run_id": "acdef415abf0",
+        "created_at": "2026-09-05T14:20:32.940367+00:00",
+        "mode": "offline",
+        "model": "deterministic-rules-v1",
+        "strategy": "uniform",
+        "fault_injection": "none",
+        "budget": {
+          "output_tokens": 2400,
+          "input_chars": 24000,
+          "max_files": 2,
+          "timeout_seconds": 60,
+          "run_seconds": 240
+        },
+        "provenance": {
+          "engine_sha256": "32529628fb107605e8220105e45635c79b89e56315c2b583a5ba1ceb46b94a09",
+          "prompt_sha256": "144333eb3ce667e9ab6b9019f80b2cc08b1f14170d88e33b7cccb719aca2d136",
+          "response_schema_sha256": "cb76662d991e3b6da21fed9377706852852e62b81e3c76874669e5c08116b70f",
+          "temperature": 0,
+          "seed": 42,
+          "thinking": false,
+          "context_window": 8192,
+          "model_digest": null,
+          "provider_injected_for_test": false
+        },
+        "patch_hash": "adb839af7c30caaeed76d7418a4543b3dce92a6e470591d54df4a2d298e1f970",
+        "files": [
+          {
+            "path": "billing/money.py",
+            "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+            "source_chars": 286,
+            "risk_score": 5,
+            "tier": "standard",
+            "signals": [
+              "Money, identity, or tenant boundary"
+            ],
+            "requested_tokens": 512,
+            "output_cap": 1200,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "config/display.py",
+            "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+            "source_chars": 117,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 1200,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "orders/receipt.py",
+            "source_hash": "48079965bfa969507d10dafe4c644bbb7871a6bde700e83fc32d6defd0fa94c4",
+            "source_chars": 159,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 1200,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "payments/checkout.py",
+            "source_hash": "ecb24f1377cfade0b1d4e3b4e0a7e87ed4d4265c436cec91c9c4404aad834408",
+            "source_chars": 518,
+            "risk_score": 10,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access",
+              "Retry or repeated execution"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 1200,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "tests/test_money.py",
+            "source_hash": "8f960e91c0e0833c8159eb6f63290f0a56e071b6a966c8e619c32c19e7397560",
+            "source_chars": 134,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 1200,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "webhooks/handler.py",
+            "source_hash": "12b3619f0449d36e585b0f87a058c07640bdcb3655320c985fc2b8c948d0c6a1",
+            "source_chars": 550,
+            "risk_score": 7,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "Untrusted input boundary"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 1200,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          }
+        ],
+        "events": [
+          {
+            "index": 0,
+            "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "kind": "review_started",
+            "mode": "offline",
+            "strategy": "uniform",
+            "budget": {
+              "output_tokens": 2400,
+              "input_chars": 24000,
+              "max_files": 2,
+              "timeout_seconds": 60,
+              "run_seconds": 240
+            },
+            "patch_hash": "adb839af7c30caaeed76d7418a4543b3dce92a6e470591d54df4a2d298e1f970",
+            "hash": "f2b799c814ea4e5b5d1bf236ec020527291ce80a30a5ffe60dd44360f9aded61"
+          },
+          {
+            "index": 1,
+            "previous_hash": "f2b799c814ea4e5b5d1bf236ec020527291ce80a30a5ffe60dd44360f9aded61",
+            "kind": "file_routed",
+            "path": "billing/money.py",
+            "tier": "standard",
+            "signals": [
+              "Money, identity, or tenant boundary"
+            ],
+            "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+            "source_chars": 286,
+            "output_cap": 0,
+            "hash": "bc882180df94cb220b94c8b0782b7535ec69ddf25bc3b2f4319dd5059e652ab5"
+          },
+          {
+            "index": 2,
+            "previous_hash": "bc882180df94cb220b94c8b0782b7535ec69ddf25bc3b2f4319dd5059e652ab5",
+            "kind": "review_response",
+            "path": "billing/money.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "ea100abacc5c1495b437a81e51d2757a5fed97973ece2d5231e3f94df4811eee"
+          },
+          {
+            "index": 3,
+            "previous_hash": "ea100abacc5c1495b437a81e51d2757a5fed97973ece2d5231e3f94df4811eee",
+            "kind": "review_validated",
+            "path": "billing/money.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "01ccdc0d7f5b19aecfc6251c4930d1bda234180dcc69080afbf80d3034dbc3a6"
+          },
+          {
+            "index": 4,
+            "previous_hash": "01ccdc0d7f5b19aecfc6251c4930d1bda234180dcc69080afbf80d3034dbc3a6",
+            "kind": "file_routed",
+            "path": "config/display.py",
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+            "source_chars": 117,
+            "output_cap": 0,
+            "hash": "bf936bb7b633139f95ca74a709d5ebf2a338ac483064df855d09d3b626db40f6"
+          },
+          {
+            "index": 5,
+            "previous_hash": "bf936bb7b633139f95ca74a709d5ebf2a338ac483064df855d09d3b626db40f6",
+            "kind": "review_response",
+            "path": "config/display.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "389e994f623a1cbb5aa5ef76bd38c3899b3db1fc279929da6d013a1bc8881ba0"
+          },
+          {
+            "index": 6,
+            "previous_hash": "389e994f623a1cbb5aa5ef76bd38c3899b3db1fc279929da6d013a1bc8881ba0",
+            "kind": "review_validated",
+            "path": "config/display.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "8f4d5895d0ea66a8917103e2fb92f446123de609dff075481cd9dd4b301668fc"
+          },
+          {
+            "index": 7,
+            "previous_hash": "8f4d5895d0ea66a8917103e2fb92f446123de609dff075481cd9dd4b301668fc",
+            "kind": "file_deferred",
+            "path": "orders/receipt.py",
+            "reason": "File review limit reached.",
+            "hash": "66e723f9e4b8149cdb691e6e3907b837f992a467942d5e165d5e22c226f8a60d"
+          },
+          {
+            "index": 8,
+            "previous_hash": "66e723f9e4b8149cdb691e6e3907b837f992a467942d5e165d5e22c226f8a60d",
+            "kind": "file_deferred",
+            "path": "payments/checkout.py",
+            "reason": "File review limit reached.",
+            "hash": "04b57f43fd3c143deca8ba9d90c3857d0bd109b74df09b27df89d62378add422"
+          },
+          {
+            "index": 9,
+            "previous_hash": "04b57f43fd3c143deca8ba9d90c3857d0bd109b74df09b27df89d62378add422",
+            "kind": "file_deferred",
+            "path": "tests/test_money.py",
+            "reason": "File review limit reached.",
+            "hash": "df46dc3a9a958fa5c0c43fa80ed8e541574aa58a97008d01c9c91e2bb2b136ad"
+          },
+          {
+            "index": 10,
+            "previous_hash": "df46dc3a9a958fa5c0c43fa80ed8e541574aa58a97008d01c9c91e2bb2b136ad",
+            "kind": "file_deferred",
+            "path": "webhooks/handler.py",
+            "reason": "File review limit reached.",
+            "hash": "ebf87f65c417649fcc26ddd2c32247550f646425dbeee569d16f333e375bac20"
+          },
+          {
+            "index": 11,
+            "previous_hash": "ebf87f65c417649fcc26ddd2c32247550f646425dbeee569d16f333e375bac20",
+            "kind": "review_completed",
+            "summary": {
+              "total_files": 6,
+              "flagged_files": 0,
+              "findings": 0,
+              "reviewed_files": 2,
+              "needs_review": 4,
+              "budget_respected": true
+            },
+            "usage": {
+              "output_tokens_reported": 0,
+              "input_tokens_reported": 0,
+              "output_tokens_accounted": 0,
+              "output_tokens_reserved": 0,
+              "input_chars": 403,
+              "model_calls": 0,
+              "rule_calls": 2,
+              "unknown_usage_calls": 0
+            },
+            "hash": "d0491e0d7076e5e95c057b09829537067887543a182410ec2b4984cbcc3a4e26"
+          }
+        ],
+        "usage": {
+          "output_tokens_reported": 0,
+          "input_tokens_reported": 0,
+          "output_tokens_accounted": 0,
+          "output_tokens_reserved": 0,
+          "input_chars": 403,
+          "model_calls": 0,
+          "rule_calls": 2,
+          "unknown_usage_calls": 0
+        },
+        "limitations": [
+          "A matching source quote validates location, not the truth of a finding.",
+          "Single-file context can miss cross-file defects.",
+          "No finding is not a safety certification; deferred files require human review.",
+          "Output limits do not cap input tokens, cost, or hardware compute."
+        ],
+        "duration_ms": 0,
+        "summary": {
+          "total_files": 6,
+          "flagged_files": 0,
+          "findings": 0,
+          "reviewed_files": 2,
+          "needs_review": 4,
+          "budget_respected": true
+        },
+        "audit_valid": true
+      }
+    },
+    {
+      "case_id": "tenant",
+      "strategy": "uniform",
+      "max_files": 2,
+      "score": {
+        "target_files_flagged": 0,
+        "control_files_flagged": 0,
+        "target_files_not_flagged": 1,
+        "file_localization_precision": null,
+        "file_localization_recall": 0.0,
+        "expected_issues": {
+          "api/invoices.py": "Any authenticated user can fetch another tenant's invoice because the query lacks tenant ownership filtering."
+        },
+        "missed_target_files": [
+          "api/invoices.py"
+        ],
+        "flagged_control_files": []
+      },
+      "report": {
+        "schema_version": 1,
+        "run_id": "2ed329f82f0b",
+        "created_at": "2026-09-05T14:20:32.942255+00:00",
+        "mode": "offline",
+        "model": "deterministic-rules-v1",
+        "strategy": "uniform",
+        "fault_injection": "none",
+        "budget": {
+          "output_tokens": 2400,
+          "input_chars": 24000,
+          "max_files": 2,
+          "timeout_seconds": 60,
+          "run_seconds": 240
+        },
+        "provenance": {
+          "engine_sha256": "32529628fb107605e8220105e45635c79b89e56315c2b583a5ba1ceb46b94a09",
+          "prompt_sha256": "144333eb3ce667e9ab6b9019f80b2cc08b1f14170d88e33b7cccb719aca2d136",
+          "response_schema_sha256": "cb76662d991e3b6da21fed9377706852852e62b81e3c76874669e5c08116b70f",
+          "temperature": 0,
+          "seed": 42,
+          "thinking": false,
+          "context_window": 8192,
+          "model_digest": null,
+          "provider_injected_for_test": false
+        },
+        "patch_hash": "5a17beb8b5fb361c2e2dec52344a04a993df8cd6d8853d1deed86bc07f520004",
+        "files": [
+          {
+            "path": "api/invoices.py",
+            "source_hash": "d543c50b1069e0277767b60a51f67fa6df5e3ac8e57672debf673855433dd01b",
+            "source_chars": 275,
+            "risk_score": 8,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 1200,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "api/profile.py",
+            "source_hash": "73a0d1642af08c770b1546673f7baaee70e328afb61b178438e9e7234a2de313",
+            "source_chars": 217,
+            "risk_score": 4,
+            "tier": "standard",
+            "signals": [
+              "External side effect or database access"
+            ],
+            "requested_tokens": 512,
+            "output_cap": 1200,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "tests/test_pagination.py",
+            "source_hash": "d45ac68a9079522243ac6bd2bb2f2f75a547baa34378165237dd94b16efdfc42",
+            "source_chars": 120,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 1200,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "utils/pagination.py",
+            "source_hash": "99d55a624a3662f3ecbfd6820a62ab7d1e8e693b47b427a007ad98d7ebf586f7",
+            "source_chars": 157,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 1200,
+            "status": "deferred",
+            "findings": [],
+            "summary": "File review limit reached.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          }
+        ],
+        "events": [
+          {
+            "index": 0,
+            "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "kind": "review_started",
+            "mode": "offline",
+            "strategy": "uniform",
+            "budget": {
+              "output_tokens": 2400,
+              "input_chars": 24000,
+              "max_files": 2,
+              "timeout_seconds": 60,
+              "run_seconds": 240
+            },
+            "patch_hash": "5a17beb8b5fb361c2e2dec52344a04a993df8cd6d8853d1deed86bc07f520004",
+            "hash": "5337c2dc4d7992edb106f038a4a139d8861431f5a1bd02d243864fa76f492f08"
+          },
+          {
+            "index": 1,
+            "previous_hash": "5337c2dc4d7992edb106f038a4a139d8861431f5a1bd02d243864fa76f492f08",
+            "kind": "file_routed",
+            "path": "api/invoices.py",
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access"
+            ],
+            "source_hash": "d543c50b1069e0277767b60a51f67fa6df5e3ac8e57672debf673855433dd01b",
+            "source_chars": 275,
+            "output_cap": 0,
+            "hash": "e6f5149c58f4c32fe75b0574b149c9662664a8663cac36dfd63c0a6665c8585d"
+          },
+          {
+            "index": 2,
+            "previous_hash": "e6f5149c58f4c32fe75b0574b149c9662664a8663cac36dfd63c0a6665c8585d",
+            "kind": "review_response",
+            "path": "api/invoices.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "1789134ddaa0c4b224de8223e82eac174b554365b1063403182150a2d21f5af7"
+          },
+          {
+            "index": 3,
+            "previous_hash": "1789134ddaa0c4b224de8223e82eac174b554365b1063403182150a2d21f5af7",
+            "kind": "review_validated",
+            "path": "api/invoices.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "0ed4cb4fc006cfd8cb95df109855240b4993f0aaa1a8a233fa67d793fc4a4f74"
+          },
+          {
+            "index": 4,
+            "previous_hash": "0ed4cb4fc006cfd8cb95df109855240b4993f0aaa1a8a233fa67d793fc4a4f74",
+            "kind": "file_routed",
+            "path": "api/profile.py",
+            "tier": "standard",
+            "signals": [
+              "External side effect or database access"
+            ],
+            "source_hash": "73a0d1642af08c770b1546673f7baaee70e328afb61b178438e9e7234a2de313",
+            "source_chars": 217,
+            "output_cap": 0,
+            "hash": "08f81b5cee63f6bdae87bb5acc931655be06c48bc4e65de0db9186af5da30f94"
+          },
+          {
+            "index": 5,
+            "previous_hash": "08f81b5cee63f6bdae87bb5acc931655be06c48bc4e65de0db9186af5da30f94",
+            "kind": "review_response",
+            "path": "api/profile.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "42241f77d89cdcee487c1e3113b3268d04302501e7e95e624656d4d0911ca6d0"
+          },
+          {
+            "index": 6,
+            "previous_hash": "42241f77d89cdcee487c1e3113b3268d04302501e7e95e624656d4d0911ca6d0",
+            "kind": "review_validated",
+            "path": "api/profile.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "8118c4560abb3807bbad4a4db6e7b0f4b90a2c70325f3deb63ffc62f0a1ee5be"
+          },
+          {
+            "index": 7,
+            "previous_hash": "8118c4560abb3807bbad4a4db6e7b0f4b90a2c70325f3deb63ffc62f0a1ee5be",
+            "kind": "file_deferred",
+            "path": "tests/test_pagination.py",
+            "reason": "File review limit reached.",
+            "hash": "932ab576fa3d09acb10bce2a7e855e52ad4a01feba93af0191a9877fae4e32b7"
+          },
+          {
+            "index": 8,
+            "previous_hash": "932ab576fa3d09acb10bce2a7e855e52ad4a01feba93af0191a9877fae4e32b7",
+            "kind": "file_deferred",
+            "path": "utils/pagination.py",
+            "reason": "File review limit reached.",
+            "hash": "b2ec4c155661e39613bc6722b0822de97e4648a35c42eba5e85546efe517abb2"
+          },
+          {
+            "index": 9,
+            "previous_hash": "b2ec4c155661e39613bc6722b0822de97e4648a35c42eba5e85546efe517abb2",
+            "kind": "review_completed",
+            "summary": {
+              "total_files": 4,
+              "flagged_files": 0,
+              "findings": 0,
+              "reviewed_files": 2,
+              "needs_review": 2,
+              "budget_respected": true
+            },
+            "usage": {
+              "output_tokens_reported": 0,
+              "input_tokens_reported": 0,
+              "output_tokens_accounted": 0,
+              "output_tokens_reserved": 0,
+              "input_chars": 492,
+              "model_calls": 0,
+              "rule_calls": 2,
+              "unknown_usage_calls": 0
+            },
+            "hash": "1b2d0e6e5e90c47fa00428cce6f0619a8f543ab74314d2cda8d42a46ca32f13d"
+          }
+        ],
+        "usage": {
+          "output_tokens_reported": 0,
+          "input_tokens_reported": 0,
+          "output_tokens_accounted": 0,
+          "output_tokens_reserved": 0,
+          "input_chars": 492,
+          "model_calls": 0,
+          "rule_calls": 2,
+          "unknown_usage_calls": 0
+        },
+        "limitations": [
+          "A matching source quote validates location, not the truth of a finding.",
+          "Single-file context can miss cross-file defects.",
+          "No finding is not a safety certification; deferred files require human review.",
+          "Output limits do not cap input tokens, cost, or hardware compute."
+        ],
+        "duration_ms": 0,
+        "summary": {
+          "total_files": 4,
+          "flagged_files": 0,
+          "findings": 0,
+          "reviewed_files": 2,
+          "needs_review": 2,
+          "budget_respected": true
+        },
+        "audit_valid": true
+      }
+    },
+    {
+      "case_id": "checkout",
+      "strategy": "adaptive",
+      "max_files": 12,
+      "score": {
+        "target_files_flagged": 0,
+        "control_files_flagged": 0,
+        "target_files_not_flagged": 2,
+        "file_localization_precision": null,
+        "file_localization_recall": 0.0,
+        "expected_issues": {
+          "payments/checkout.py": "Retries after an ambiguous timeout can repeat a successful charge because no stable idempotency key is sent.",
+          "webhooks/handler.py": "The handler trusts caller-controlled payment events without authenticating the webhook signature."
+        },
+        "missed_target_files": [
+          "payments/checkout.py",
+          "webhooks/handler.py"
+        ],
+        "flagged_control_files": []
+      },
+      "report": {
+        "schema_version": 1,
+        "run_id": "0a5e5a074ae8",
+        "created_at": "2026-09-05T14:20:32.944241+00:00",
+        "mode": "offline",
+        "model": "deterministic-rules-v1",
+        "strategy": "adaptive",
+        "fault_injection": "none",
+        "budget": {
+          "output_tokens": 2400,
+          "input_chars": 24000,
+          "max_files": 12,
+          "timeout_seconds": 60,
+          "run_seconds": 240
+        },
+        "provenance": {
+          "engine_sha256": "32529628fb107605e8220105e45635c79b89e56315c2b583a5ba1ceb46b94a09",
+          "prompt_sha256": "144333eb3ce667e9ab6b9019f80b2cc08b1f14170d88e33b7cccb719aca2d136",
+          "response_schema_sha256": "cb76662d991e3b6da21fed9377706852852e62b81e3c76874669e5c08116b70f",
+          "temperature": 0,
+          "seed": 42,
+          "thinking": false,
+          "context_window": 8192,
+          "model_digest": null,
+          "provider_injected_for_test": false
+        },
+        "patch_hash": "0b7d5d578b15c4354c4a0e5ac99b9462b3e4063218f972ea48e9b9d5147aa12c",
+        "files": [
+          {
+            "path": "payments/checkout.py",
+            "source_hash": "2306d62730a20d232953bd5ab8064fdc6b036f9124ce2cc044b3ac2fd77b5ff2",
+            "source_chars": 467,
+            "risk_score": 10,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access",
+              "Retry or repeated execution"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 768,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "webhooks/handler.py",
+            "source_hash": "4922fe8961a221450559ec80ab70472fbbbcacb5da99c960e87ca8913b59439a",
+            "source_chars": 223,
+            "risk_score": 7,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "Untrusted input boundary"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 768,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "billing/money.py",
+            "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+            "source_chars": 286,
+            "risk_score": 5,
+            "tier": "standard",
+            "signals": [
+              "Money, identity, or tenant boundary"
+            ],
+            "requested_tokens": 512,
+            "output_cap": 512,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "config/display.py",
+            "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+            "source_chars": 117,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 256,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "orders/receipt.py",
+            "source_hash": "48079965bfa969507d10dafe4c644bbb7871a6bde700e83fc32d6defd0fa94c4",
+            "source_chars": 159,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 256,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "tests/test_money.py",
+            "source_hash": "8f960e91c0e0833c8159eb6f63290f0a56e071b6a966c8e619c32c19e7397560",
+            "source_chars": 134,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 256,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          }
+        ],
+        "events": [
+          {
+            "index": 0,
+            "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "kind": "review_started",
+            "mode": "offline",
+            "strategy": "adaptive",
+            "budget": {
+              "output_tokens": 2400,
+              "input_chars": 24000,
+              "max_files": 12,
+              "timeout_seconds": 60,
+              "run_seconds": 240
+            },
+            "patch_hash": "0b7d5d578b15c4354c4a0e5ac99b9462b3e4063218f972ea48e9b9d5147aa12c",
+            "hash": "5af9fc26e6c9faca4c3f4e16988b2073e5263f6953431d955ebd5ff23a6f1816"
+          },
+          {
+            "index": 1,
+            "previous_hash": "5af9fc26e6c9faca4c3f4e16988b2073e5263f6953431d955ebd5ff23a6f1816",
+            "kind": "file_routed",
+            "path": "payments/checkout.py",
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access",
+              "Retry or repeated execution"
+            ],
+            "source_hash": "2306d62730a20d232953bd5ab8064fdc6b036f9124ce2cc044b3ac2fd77b5ff2",
+            "source_chars": 467,
+            "output_cap": 0,
+            "hash": "4c26300224a72ffb29a38f86b1506306557f5bb1ea8d54c1281567a13cfa774b"
+          },
+          {
+            "index": 2,
+            "previous_hash": "4c26300224a72ffb29a38f86b1506306557f5bb1ea8d54c1281567a13cfa774b",
+            "kind": "review_response",
+            "path": "payments/checkout.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "f496d1c325a84def859566d08b9b94e0672e1b0e612a7598d7677bb0ce5d72ff"
+          },
+          {
+            "index": 3,
+            "previous_hash": "f496d1c325a84def859566d08b9b94e0672e1b0e612a7598d7677bb0ce5d72ff",
+            "kind": "review_validated",
+            "path": "payments/checkout.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "049b15bacd8d38197b10a56d7c2e834979db8359c21e20ac5883113df8d2a6c2"
+          },
+          {
+            "index": 4,
+            "previous_hash": "049b15bacd8d38197b10a56d7c2e834979db8359c21e20ac5883113df8d2a6c2",
+            "kind": "file_routed",
+            "path": "webhooks/handler.py",
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "Untrusted input boundary"
+            ],
+            "source_hash": "4922fe8961a221450559ec80ab70472fbbbcacb5da99c960e87ca8913b59439a",
+            "source_chars": 223,
+            "output_cap": 0,
+            "hash": "8cf8d63fe07d8434e163dafb8a0aa1f4a67abafcbe13795f0c18aaaeef3bccb4"
+          },
+          {
+            "index": 5,
+            "previous_hash": "8cf8d63fe07d8434e163dafb8a0aa1f4a67abafcbe13795f0c18aaaeef3bccb4",
+            "kind": "review_response",
+            "path": "webhooks/handler.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "4f0a7e9ecaa2ac7e8e93cfa236376f29321556c067ba28202b41dd433c6d67ca"
+          },
+          {
+            "index": 6,
+            "previous_hash": "4f0a7e9ecaa2ac7e8e93cfa236376f29321556c067ba28202b41dd433c6d67ca",
+            "kind": "review_validated",
+            "path": "webhooks/handler.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "5f88af6dbbeb3b1f775141bbb6df2fe5ce92d707b5be0b189ac43eaa5b6d7aab"
+          },
+          {
+            "index": 7,
+            "previous_hash": "5f88af6dbbeb3b1f775141bbb6df2fe5ce92d707b5be0b189ac43eaa5b6d7aab",
+            "kind": "file_routed",
+            "path": "billing/money.py",
+            "tier": "standard",
+            "signals": [
+              "Money, identity, or tenant boundary"
+            ],
+            "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+            "source_chars": 286,
+            "output_cap": 0,
+            "hash": "ec0aa2c6493833987dafd4d6421596053a8d026b99f0f0039b51865277af7fd5"
+          },
+          {
+            "index": 8,
+            "previous_hash": "ec0aa2c6493833987dafd4d6421596053a8d026b99f0f0039b51865277af7fd5",
+            "kind": "review_response",
+            "path": "billing/money.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "00d9563771e33dc3323eefc6d54c6e9fda1918ebb76958fad6052cdbb7c74fa1"
+          },
+          {
+            "index": 9,
+            "previous_hash": "00d9563771e33dc3323eefc6d54c6e9fda1918ebb76958fad6052cdbb7c74fa1",
+            "kind": "review_validated",
+            "path": "billing/money.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "a51a565cb33662ae55d86d27a72aa4cf6d9aa3e449effcd162584fcff7ab57c2"
+          },
+          {
+            "index": 10,
+            "previous_hash": "a51a565cb33662ae55d86d27a72aa4cf6d9aa3e449effcd162584fcff7ab57c2",
+            "kind": "file_routed",
+            "path": "config/display.py",
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+            "source_chars": 117,
+            "output_cap": 0,
+            "hash": "5e166a55fa44e7ad12cd265d64f0a56549e1b1405516c287f1e1c8c9a322a85c"
+          },
+          {
+            "index": 11,
+            "previous_hash": "5e166a55fa44e7ad12cd265d64f0a56549e1b1405516c287f1e1c8c9a322a85c",
+            "kind": "review_response",
+            "path": "config/display.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "c91b33d779f199def509be7db8b4782c2e8711c855acfcbf485b9176784a6c73"
+          },
+          {
+            "index": 12,
+            "previous_hash": "c91b33d779f199def509be7db8b4782c2e8711c855acfcbf485b9176784a6c73",
+            "kind": "review_validated",
+            "path": "config/display.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "05787a49d2c08b7b7d291190b6cb91bcd65b01c53740d29515cdce19b49db802"
+          },
+          {
+            "index": 13,
+            "previous_hash": "05787a49d2c08b7b7d291190b6cb91bcd65b01c53740d29515cdce19b49db802",
+            "kind": "file_routed",
+            "path": "orders/receipt.py",
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "source_hash": "48079965bfa969507d10dafe4c644bbb7871a6bde700e83fc32d6defd0fa94c4",
+            "source_chars": 159,
+            "output_cap": 0,
+            "hash": "f6546a2b723609dd341da390e39d0a4eb1b9efba1a5dcf1238fd351c5ecbe945"
+          },
+          {
+            "index": 14,
+            "previous_hash": "f6546a2b723609dd341da390e39d0a4eb1b9efba1a5dcf1238fd351c5ecbe945",
+            "kind": "review_response",
+            "path": "orders/receipt.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "fb2b0ebf0e530e70a1bc684bd9a4952cb2194b9778bf51dabec341c1c3e36c88"
+          },
+          {
+            "index": 15,
+            "previous_hash": "fb2b0ebf0e530e70a1bc684bd9a4952cb2194b9778bf51dabec341c1c3e36c88",
+            "kind": "review_validated",
+            "path": "orders/receipt.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "f3ca7a230edf86386d78c3484b1beca7c376b338a199e32b90262876c643c2cc"
+          },
+          {
+            "index": 16,
+            "previous_hash": "f3ca7a230edf86386d78c3484b1beca7c376b338a199e32b90262876c643c2cc",
+            "kind": "file_routed",
+            "path": "tests/test_money.py",
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "source_hash": "8f960e91c0e0833c8159eb6f63290f0a56e071b6a966c8e619c32c19e7397560",
+            "source_chars": 134,
+            "output_cap": 0,
+            "hash": "a57b7aeec2f917a6d79b1544e9dcaf3483ac7015cb1532d0de83ce1c433e6059"
+          },
+          {
+            "index": 17,
+            "previous_hash": "a57b7aeec2f917a6d79b1544e9dcaf3483ac7015cb1532d0de83ce1c433e6059",
+            "kind": "review_response",
+            "path": "tests/test_money.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "59250243f5f2fc4bd4fa7f1b17fb0711854bcbdada89f6bb4bd1041a72883f13"
+          },
+          {
+            "index": 18,
+            "previous_hash": "59250243f5f2fc4bd4fa7f1b17fb0711854bcbdada89f6bb4bd1041a72883f13",
+            "kind": "review_validated",
+            "path": "tests/test_money.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "84ceabc6ef0e8a5ed6d6e560242e55e8d5e0f2fb66395261c60d79c463d46384"
+          },
+          {
+            "index": 19,
+            "previous_hash": "84ceabc6ef0e8a5ed6d6e560242e55e8d5e0f2fb66395261c60d79c463d46384",
+            "kind": "review_completed",
+            "summary": {
+              "total_files": 6,
+              "flagged_files": 0,
+              "findings": 0,
+              "reviewed_files": 6,
+              "needs_review": 0,
+              "budget_respected": true
+            },
+            "usage": {
+              "output_tokens_reported": 0,
+              "input_tokens_reported": 0,
+              "output_tokens_accounted": 0,
+              "output_tokens_reserved": 0,
+              "input_chars": 1386,
+              "model_calls": 0,
+              "rule_calls": 6,
+              "unknown_usage_calls": 0
+            },
+            "hash": "1342f4dcae397223bcdc7425648b9a340e1aea25fece43251d227c22815f65c0"
+          }
+        ],
+        "usage": {
+          "output_tokens_reported": 0,
+          "input_tokens_reported": 0,
+          "output_tokens_accounted": 0,
+          "output_tokens_reserved": 0,
+          "input_chars": 1386,
+          "model_calls": 0,
+          "rule_calls": 6,
+          "unknown_usage_calls": 0
+        },
+        "limitations": [
+          "A matching source quote validates location, not the truth of a finding.",
+          "Single-file context can miss cross-file defects.",
+          "No finding is not a safety certification; deferred files require human review.",
+          "Output limits do not cap input tokens, cost, or hardware compute."
+        ],
+        "duration_ms": 1,
+        "summary": {
+          "total_files": 6,
+          "flagged_files": 0,
+          "findings": 0,
+          "reviewed_files": 6,
+          "needs_review": 0,
+          "budget_respected": true
+        },
+        "audit_valid": true
+      }
+    },
+    {
+      "case_id": "checkout_fixed",
+      "strategy": "adaptive",
+      "max_files": 12,
+      "score": {
+        "target_files_flagged": 0,
+        "control_files_flagged": 0,
+        "target_files_not_flagged": 0,
+        "file_localization_precision": null,
+        "file_localization_recall": null,
+        "expected_issues": {},
+        "missed_target_files": [],
+        "flagged_control_files": []
+      },
+      "report": {
+        "schema_version": 1,
+        "run_id": "a49185600080",
+        "created_at": "2026-09-05T14:20:32.946985+00:00",
+        "mode": "offline",
+        "model": "deterministic-rules-v1",
+        "strategy": "adaptive",
+        "fault_injection": "none",
+        "budget": {
+          "output_tokens": 2400,
+          "input_chars": 24000,
+          "max_files": 12,
+          "timeout_seconds": 60,
+          "run_seconds": 240
+        },
+        "provenance": {
+          "engine_sha256": "32529628fb107605e8220105e45635c79b89e56315c2b583a5ba1ceb46b94a09",
+          "prompt_sha256": "144333eb3ce667e9ab6b9019f80b2cc08b1f14170d88e33b7cccb719aca2d136",
+          "response_schema_sha256": "cb76662d991e3b6da21fed9377706852852e62b81e3c76874669e5c08116b70f",
+          "temperature": 0,
+          "seed": 42,
+          "thinking": false,
+          "context_window": 8192,
+          "model_digest": null,
+          "provider_injected_for_test": false
+        },
+        "patch_hash": "adb839af7c30caaeed76d7418a4543b3dce92a6e470591d54df4a2d298e1f970",
+        "files": [
+          {
+            "path": "payments/checkout.py",
+            "source_hash": "ecb24f1377cfade0b1d4e3b4e0a7e87ed4d4265c436cec91c9c4404aad834408",
+            "source_chars": 518,
+            "risk_score": 10,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access",
+              "Retry or repeated execution"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 768,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "webhooks/handler.py",
+            "source_hash": "12b3619f0449d36e585b0f87a058c07640bdcb3655320c985fc2b8c948d0c6a1",
+            "source_chars": 550,
+            "risk_score": 7,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "Untrusted input boundary"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 768,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "billing/money.py",
+            "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+            "source_chars": 286,
+            "risk_score": 5,
+            "tier": "standard",
+            "signals": [
+              "Money, identity, or tenant boundary"
+            ],
+            "requested_tokens": 512,
+            "output_cap": 512,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "config/display.py",
+            "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+            "source_chars": 117,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 256,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "orders/receipt.py",
+            "source_hash": "48079965bfa969507d10dafe4c644bbb7871a6bde700e83fc32d6defd0fa94c4",
+            "source_chars": 159,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 256,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "tests/test_money.py",
+            "source_hash": "8f960e91c0e0833c8159eb6f63290f0a56e071b6a966c8e619c32c19e7397560",
+            "source_chars": 134,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 256,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          }
+        ],
+        "events": [
+          {
+            "index": 0,
+            "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "kind": "review_started",
+            "mode": "offline",
+            "strategy": "adaptive",
+            "budget": {
+              "output_tokens": 2400,
+              "input_chars": 24000,
+              "max_files": 12,
+              "timeout_seconds": 60,
+              "run_seconds": 240
+            },
+            "patch_hash": "adb839af7c30caaeed76d7418a4543b3dce92a6e470591d54df4a2d298e1f970",
+            "hash": "0bf31ef21daf8bba564d0cdddd3b54abcfae0b41462253fab25a3e40f60a3d53"
+          },
+          {
+            "index": 1,
+            "previous_hash": "0bf31ef21daf8bba564d0cdddd3b54abcfae0b41462253fab25a3e40f60a3d53",
+            "kind": "file_routed",
+            "path": "payments/checkout.py",
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access",
+              "Retry or repeated execution"
+            ],
+            "source_hash": "ecb24f1377cfade0b1d4e3b4e0a7e87ed4d4265c436cec91c9c4404aad834408",
+            "source_chars": 518,
+            "output_cap": 0,
+            "hash": "00b0bb73a67434431b2402534b282b1a45260a095ffa56020796cdd47c488310"
+          },
+          {
+            "index": 2,
+            "previous_hash": "00b0bb73a67434431b2402534b282b1a45260a095ffa56020796cdd47c488310",
+            "kind": "review_response",
+            "path": "payments/checkout.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "3b987398e50dbad9e1d6f4dbd1cddb9fe0e2fec24769632b172f762c89ffdb1c"
+          },
+          {
+            "index": 3,
+            "previous_hash": "3b987398e50dbad9e1d6f4dbd1cddb9fe0e2fec24769632b172f762c89ffdb1c",
+            "kind": "review_validated",
+            "path": "payments/checkout.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "bbd6ccba4242d07fee63484a56d34bf6ba858ad9f88ba1c04a918822b3ce7452"
+          },
+          {
+            "index": 4,
+            "previous_hash": "bbd6ccba4242d07fee63484a56d34bf6ba858ad9f88ba1c04a918822b3ce7452",
+            "kind": "file_routed",
+            "path": "webhooks/handler.py",
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "Untrusted input boundary"
+            ],
+            "source_hash": "12b3619f0449d36e585b0f87a058c07640bdcb3655320c985fc2b8c948d0c6a1",
+            "source_chars": 550,
+            "output_cap": 0,
+            "hash": "2620acd21a849c2294e4d724e0cf15ae6351b48feb16db960d81320543d7d65d"
+          },
+          {
+            "index": 5,
+            "previous_hash": "2620acd21a849c2294e4d724e0cf15ae6351b48feb16db960d81320543d7d65d",
+            "kind": "review_response",
+            "path": "webhooks/handler.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "98b8a755474dff83b269a5f59c7eb5faef27ef465b3d260fea131b04eab8cb82"
+          },
+          {
+            "index": 6,
+            "previous_hash": "98b8a755474dff83b269a5f59c7eb5faef27ef465b3d260fea131b04eab8cb82",
+            "kind": "review_validated",
+            "path": "webhooks/handler.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "31c9ea71033ab8676d321e59661758793d8af6f9176c1ba041fbcb2addef9bbb"
+          },
+          {
+            "index": 7,
+            "previous_hash": "31c9ea71033ab8676d321e59661758793d8af6f9176c1ba041fbcb2addef9bbb",
+            "kind": "file_routed",
+            "path": "billing/money.py",
+            "tier": "standard",
+            "signals": [
+              "Money, identity, or tenant boundary"
+            ],
+            "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+            "source_chars": 286,
+            "output_cap": 0,
+            "hash": "e14c019a56dee372490e923d31d16bd8541b207f962f2905a8ddf9571f43f1b4"
+          },
+          {
+            "index": 8,
+            "previous_hash": "e14c019a56dee372490e923d31d16bd8541b207f962f2905a8ddf9571f43f1b4",
+            "kind": "review_response",
+            "path": "billing/money.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "4f61bfef01678c665c760a7fcd2b1e2d76b90ffa7beadcbc95f487f7462af39e"
+          },
+          {
+            "index": 9,
+            "previous_hash": "4f61bfef01678c665c760a7fcd2b1e2d76b90ffa7beadcbc95f487f7462af39e",
+            "kind": "review_validated",
+            "path": "billing/money.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "d504a415d0cae68e82742951ca5a78f2b6680d0d870fdab911d257a4febe1095"
+          },
+          {
+            "index": 10,
+            "previous_hash": "d504a415d0cae68e82742951ca5a78f2b6680d0d870fdab911d257a4febe1095",
+            "kind": "file_routed",
+            "path": "config/display.py",
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+            "source_chars": 117,
+            "output_cap": 0,
+            "hash": "ac7dfc9a1f78f61bbc952a4cc2dd1cb4c259265983e0329027e991becacb4b0d"
+          },
+          {
+            "index": 11,
+            "previous_hash": "ac7dfc9a1f78f61bbc952a4cc2dd1cb4c259265983e0329027e991becacb4b0d",
+            "kind": "review_response",
+            "path": "config/display.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "cd4a96eaf74bd2fb706115359941e5879c3195f30dd570c35ec9171e3044ac5e"
+          },
+          {
+            "index": 12,
+            "previous_hash": "cd4a96eaf74bd2fb706115359941e5879c3195f30dd570c35ec9171e3044ac5e",
+            "kind": "review_validated",
+            "path": "config/display.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "047958df6c2bbbf683fd1b33acf9106f6d97f8baeb3729ab78a1caa890604271"
+          },
+          {
+            "index": 13,
+            "previous_hash": "047958df6c2bbbf683fd1b33acf9106f6d97f8baeb3729ab78a1caa890604271",
+            "kind": "file_routed",
+            "path": "orders/receipt.py",
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "source_hash": "48079965bfa969507d10dafe4c644bbb7871a6bde700e83fc32d6defd0fa94c4",
+            "source_chars": 159,
+            "output_cap": 0,
+            "hash": "3aeddd9c7b66f8757f7ca80c5658a458e51d6cf675c00712d3f3ca80775f38b3"
+          },
+          {
+            "index": 14,
+            "previous_hash": "3aeddd9c7b66f8757f7ca80c5658a458e51d6cf675c00712d3f3ca80775f38b3",
+            "kind": "review_response",
+            "path": "orders/receipt.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "ef9d6a7eddd5328163d555d4909ef3fb242011dbabffb9049a2882b80fe32960"
+          },
+          {
+            "index": 15,
+            "previous_hash": "ef9d6a7eddd5328163d555d4909ef3fb242011dbabffb9049a2882b80fe32960",
+            "kind": "review_validated",
+            "path": "orders/receipt.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "f8e6a6342d60972afcee3e704660aa6cc4042e5d427ea3f81dc01bcfe88a395c"
+          },
+          {
+            "index": 16,
+            "previous_hash": "f8e6a6342d60972afcee3e704660aa6cc4042e5d427ea3f81dc01bcfe88a395c",
+            "kind": "file_routed",
+            "path": "tests/test_money.py",
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "source_hash": "8f960e91c0e0833c8159eb6f63290f0a56e071b6a966c8e619c32c19e7397560",
+            "source_chars": 134,
+            "output_cap": 0,
+            "hash": "b68fb4a30c2cde2a288c39d86941ef80793b43be97cab152f7f9eedd6b151b10"
+          },
+          {
+            "index": 17,
+            "previous_hash": "b68fb4a30c2cde2a288c39d86941ef80793b43be97cab152f7f9eedd6b151b10",
+            "kind": "review_response",
+            "path": "tests/test_money.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "cc6d628397b11e53796fdb3747247a9e1f06e3db09e4fc4cad253379b50c8eb4"
+          },
+          {
+            "index": 18,
+            "previous_hash": "cc6d628397b11e53796fdb3747247a9e1f06e3db09e4fc4cad253379b50c8eb4",
+            "kind": "review_validated",
+            "path": "tests/test_money.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "87f53bf9011026ea45115fc92dc8cb6b255fd4797f4d8ecc9c040be72da63f52"
+          },
+          {
+            "index": 19,
+            "previous_hash": "87f53bf9011026ea45115fc92dc8cb6b255fd4797f4d8ecc9c040be72da63f52",
+            "kind": "review_completed",
+            "summary": {
+              "total_files": 6,
+              "flagged_files": 0,
+              "findings": 0,
+              "reviewed_files": 6,
+              "needs_review": 0,
+              "budget_respected": true
+            },
+            "usage": {
+              "output_tokens_reported": 0,
+              "input_tokens_reported": 0,
+              "output_tokens_accounted": 0,
+              "output_tokens_reserved": 0,
+              "input_chars": 1764,
+              "model_calls": 0,
+              "rule_calls": 6,
+              "unknown_usage_calls": 0
+            },
+            "hash": "e7e15c290298718472f9aa2c9e121c0c05e3494261fe5274cdea7f5bafea7266"
+          }
+        ],
+        "usage": {
+          "output_tokens_reported": 0,
+          "input_tokens_reported": 0,
+          "output_tokens_accounted": 0,
+          "output_tokens_reserved": 0,
+          "input_chars": 1764,
+          "model_calls": 0,
+          "rule_calls": 6,
+          "unknown_usage_calls": 0
+        },
+        "limitations": [
+          "A matching source quote validates location, not the truth of a finding.",
+          "Single-file context can miss cross-file defects.",
+          "No finding is not a safety certification; deferred files require human review.",
+          "Output limits do not cap input tokens, cost, or hardware compute."
+        ],
+        "duration_ms": 1,
+        "summary": {
+          "total_files": 6,
+          "flagged_files": 0,
+          "findings": 0,
+          "reviewed_files": 6,
+          "needs_review": 0,
+          "budget_respected": true
+        },
+        "audit_valid": true
+      }
+    },
+    {
+      "case_id": "tenant",
+      "strategy": "adaptive",
+      "max_files": 12,
+      "score": {
+        "target_files_flagged": 0,
+        "control_files_flagged": 0,
+        "target_files_not_flagged": 1,
+        "file_localization_precision": null,
+        "file_localization_recall": 0.0,
+        "expected_issues": {
+          "api/invoices.py": "Any authenticated user can fetch another tenant's invoice because the query lacks tenant ownership filtering."
+        },
+        "missed_target_files": [
+          "api/invoices.py"
+        ],
+        "flagged_control_files": []
+      },
+      "report": {
+        "schema_version": 1,
+        "run_id": "0a8e69c1f3ad",
+        "created_at": "2026-09-05T14:20:32.950146+00:00",
+        "mode": "offline",
+        "model": "deterministic-rules-v1",
+        "strategy": "adaptive",
+        "fault_injection": "none",
+        "budget": {
+          "output_tokens": 2400,
+          "input_chars": 24000,
+          "max_files": 12,
+          "timeout_seconds": 60,
+          "run_seconds": 240
+        },
+        "provenance": {
+          "engine_sha256": "32529628fb107605e8220105e45635c79b89e56315c2b583a5ba1ceb46b94a09",
+          "prompt_sha256": "144333eb3ce667e9ab6b9019f80b2cc08b1f14170d88e33b7cccb719aca2d136",
+          "response_schema_sha256": "cb76662d991e3b6da21fed9377706852852e62b81e3c76874669e5c08116b70f",
+          "temperature": 0,
+          "seed": 42,
+          "thinking": false,
+          "context_window": 8192,
+          "model_digest": null,
+          "provider_injected_for_test": false
+        },
+        "patch_hash": "5a17beb8b5fb361c2e2dec52344a04a993df8cd6d8853d1deed86bc07f520004",
+        "files": [
+          {
+            "path": "api/invoices.py",
+            "source_hash": "d543c50b1069e0277767b60a51f67fa6df5e3ac8e57672debf673855433dd01b",
+            "source_chars": 275,
+            "risk_score": 8,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 768,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "api/profile.py",
+            "source_hash": "73a0d1642af08c770b1546673f7baaee70e328afb61b178438e9e7234a2de313",
+            "source_chars": 217,
+            "risk_score": 4,
+            "tier": "standard",
+            "signals": [
+              "External side effect or database access"
+            ],
+            "requested_tokens": 512,
+            "output_cap": 512,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "tests/test_pagination.py",
+            "source_hash": "d45ac68a9079522243ac6bd2bb2f2f75a547baa34378165237dd94b16efdfc42",
+            "source_chars": 120,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 256,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "utils/pagination.py",
+            "source_hash": "99d55a624a3662f3ecbfd6820a62ab7d1e8e693b47b427a007ad98d7ebf586f7",
+            "source_chars": 157,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 256,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          }
+        ],
+        "events": [
+          {
+            "index": 0,
+            "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "kind": "review_started",
+            "mode": "offline",
+            "strategy": "adaptive",
+            "budget": {
+              "output_tokens": 2400,
+              "input_chars": 24000,
+              "max_files": 12,
+              "timeout_seconds": 60,
+              "run_seconds": 240
+            },
+            "patch_hash": "5a17beb8b5fb361c2e2dec52344a04a993df8cd6d8853d1deed86bc07f520004",
+            "hash": "d56a4cdbb92ddd940157e8b1eee4bc9a85b99fb3fa78db892832b2c495a05c1d"
+          },
+          {
+            "index": 1,
+            "previous_hash": "d56a4cdbb92ddd940157e8b1eee4bc9a85b99fb3fa78db892832b2c495a05c1d",
+            "kind": "file_routed",
+            "path": "api/invoices.py",
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access"
+            ],
+            "source_hash": "d543c50b1069e0277767b60a51f67fa6df5e3ac8e57672debf673855433dd01b",
+            "source_chars": 275,
+            "output_cap": 0,
+            "hash": "2988fdd382f889f827b5bc16941e850760286e5b16c988192bdb865082db841c"
+          },
+          {
+            "index": 2,
+            "previous_hash": "2988fdd382f889f827b5bc16941e850760286e5b16c988192bdb865082db841c",
+            "kind": "review_response",
+            "path": "api/invoices.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "7a75ae6c8144a356082f7b9c00361b41088fca21c070976551312c360822abe9"
+          },
+          {
+            "index": 3,
+            "previous_hash": "7a75ae6c8144a356082f7b9c00361b41088fca21c070976551312c360822abe9",
+            "kind": "review_validated",
+            "path": "api/invoices.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "0a052c5a12003bd782e289cd11a3d93c6f03bb0bfe4900d8ec0b35427a90405f"
+          },
+          {
+            "index": 4,
+            "previous_hash": "0a052c5a12003bd782e289cd11a3d93c6f03bb0bfe4900d8ec0b35427a90405f",
+            "kind": "file_routed",
+            "path": "api/profile.py",
+            "tier": "standard",
+            "signals": [
+              "External side effect or database access"
+            ],
+            "source_hash": "73a0d1642af08c770b1546673f7baaee70e328afb61b178438e9e7234a2de313",
+            "source_chars": 217,
+            "output_cap": 0,
+            "hash": "b15918682928ff9dea324d70ee78034d2bad46fe46ecb2323bde5e640450b89d"
+          },
+          {
+            "index": 5,
+            "previous_hash": "b15918682928ff9dea324d70ee78034d2bad46fe46ecb2323bde5e640450b89d",
+            "kind": "review_response",
+            "path": "api/profile.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "5db7843736b643d9061c3eb48f847c5a0ee873a4c335c24757bba50e1e5cc1bf"
+          },
+          {
+            "index": 6,
+            "previous_hash": "5db7843736b643d9061c3eb48f847c5a0ee873a4c335c24757bba50e1e5cc1bf",
+            "kind": "review_validated",
+            "path": "api/profile.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "cc7e7f75aaf8541193f10b5479edc5f9c7c54c50918c2e7a8c8d3e5de5d05f2f"
+          },
+          {
+            "index": 7,
+            "previous_hash": "cc7e7f75aaf8541193f10b5479edc5f9c7c54c50918c2e7a8c8d3e5de5d05f2f",
+            "kind": "file_routed",
+            "path": "tests/test_pagination.py",
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "source_hash": "d45ac68a9079522243ac6bd2bb2f2f75a547baa34378165237dd94b16efdfc42",
+            "source_chars": 120,
+            "output_cap": 0,
+            "hash": "dc715334b134051ffd6f4c1a0c48d65008dd19ccefdcc4e884ebc47b7b6d8db4"
+          },
+          {
+            "index": 8,
+            "previous_hash": "dc715334b134051ffd6f4c1a0c48d65008dd19ccefdcc4e884ebc47b7b6d8db4",
+            "kind": "review_response",
+            "path": "tests/test_pagination.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "920840aba542f6be1e0a5e32b49a7a82825b248e5db5927d55eeaf493684538d"
+          },
+          {
+            "index": 9,
+            "previous_hash": "920840aba542f6be1e0a5e32b49a7a82825b248e5db5927d55eeaf493684538d",
+            "kind": "review_validated",
+            "path": "tests/test_pagination.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "7c064ddc5bafa350c3883b32b85303e7c321aefaf0b903d438bf304bcf8029a0"
+          },
+          {
+            "index": 10,
+            "previous_hash": "7c064ddc5bafa350c3883b32b85303e7c321aefaf0b903d438bf304bcf8029a0",
+            "kind": "file_routed",
+            "path": "utils/pagination.py",
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "source_hash": "99d55a624a3662f3ecbfd6820a62ab7d1e8e693b47b427a007ad98d7ebf586f7",
+            "source_chars": 157,
+            "output_cap": 0,
+            "hash": "651b7f16159dcaab9a014c9f657603c170c38007c16a56b67bf8ebe390692f28"
+          },
+          {
+            "index": 11,
+            "previous_hash": "651b7f16159dcaab9a014c9f657603c170c38007c16a56b67bf8ebe390692f28",
+            "kind": "review_response",
+            "path": "utils/pagination.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "2490f9951705c3db8e90ca21f884edc82d6815711e0178826914963aaf01dc4e"
+          },
+          {
+            "index": 12,
+            "previous_hash": "2490f9951705c3db8e90ca21f884edc82d6815711e0178826914963aaf01dc4e",
+            "kind": "review_validated",
+            "path": "utils/pagination.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "d238d859d2202f72fecc933037a1b5ab22688c8fd81ae3fa43dff9f6892a035d"
+          },
+          {
+            "index": 13,
+            "previous_hash": "d238d859d2202f72fecc933037a1b5ab22688c8fd81ae3fa43dff9f6892a035d",
+            "kind": "review_completed",
+            "summary": {
+              "total_files": 4,
+              "flagged_files": 0,
+              "findings": 0,
+              "reviewed_files": 4,
+              "needs_review": 0,
+              "budget_respected": true
+            },
+            "usage": {
+              "output_tokens_reported": 0,
+              "input_tokens_reported": 0,
+              "output_tokens_accounted": 0,
+              "output_tokens_reserved": 0,
+              "input_chars": 769,
+              "model_calls": 0,
+              "rule_calls": 4,
+              "unknown_usage_calls": 0
+            },
+            "hash": "6ae5ca90f9664bb15e90efcc96fc25ae77d418460bbfaaa0c2ed5cf7a8c8b105"
+          }
+        ],
+        "usage": {
+          "output_tokens_reported": 0,
+          "input_tokens_reported": 0,
+          "output_tokens_accounted": 0,
+          "output_tokens_reserved": 0,
+          "input_chars": 769,
+          "model_calls": 0,
+          "rule_calls": 4,
+          "unknown_usage_calls": 0
+        },
+        "limitations": [
+          "A matching source quote validates location, not the truth of a finding.",
+          "Single-file context can miss cross-file defects.",
+          "No finding is not a safety certification; deferred files require human review.",
+          "Output limits do not cap input tokens, cost, or hardware compute."
+        ],
+        "duration_ms": 0,
+        "summary": {
+          "total_files": 4,
+          "flagged_files": 0,
+          "findings": 0,
+          "reviewed_files": 4,
+          "needs_review": 0,
+          "budget_respected": true
+        },
+        "audit_valid": true
+      }
+    },
+    {
+      "case_id": "checkout",
+      "strategy": "uniform",
+      "max_files": 12,
+      "score": {
+        "target_files_flagged": 0,
+        "control_files_flagged": 0,
+        "target_files_not_flagged": 2,
+        "file_localization_precision": null,
+        "file_localization_recall": 0.0,
+        "expected_issues": {
+          "payments/checkout.py": "Retries after an ambiguous timeout can repeat a successful charge because no stable idempotency key is sent.",
+          "webhooks/handler.py": "The handler trusts caller-controlled payment events without authenticating the webhook signature."
+        },
+        "missed_target_files": [
+          "payments/checkout.py",
+          "webhooks/handler.py"
+        ],
+        "flagged_control_files": []
+      },
+      "report": {
+        "schema_version": 1,
+        "run_id": "85beddbb3261",
+        "created_at": "2026-09-05T14:20:32.953140+00:00",
+        "mode": "offline",
+        "model": "deterministic-rules-v1",
+        "strategy": "uniform",
+        "fault_injection": "none",
+        "budget": {
+          "output_tokens": 2400,
+          "input_chars": 24000,
+          "max_files": 12,
+          "timeout_seconds": 60,
+          "run_seconds": 240
+        },
+        "provenance": {
+          "engine_sha256": "32529628fb107605e8220105e45635c79b89e56315c2b583a5ba1ceb46b94a09",
+          "prompt_sha256": "144333eb3ce667e9ab6b9019f80b2cc08b1f14170d88e33b7cccb719aca2d136",
+          "response_schema_sha256": "cb76662d991e3b6da21fed9377706852852e62b81e3c76874669e5c08116b70f",
+          "temperature": 0,
+          "seed": 42,
+          "thinking": false,
+          "context_window": 8192,
+          "model_digest": null,
+          "provider_injected_for_test": false
+        },
+        "patch_hash": "0b7d5d578b15c4354c4a0e5ac99b9462b3e4063218f972ea48e9b9d5147aa12c",
+        "files": [
+          {
+            "path": "billing/money.py",
+            "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+            "source_chars": 286,
+            "risk_score": 5,
+            "tier": "standard",
+            "signals": [
+              "Money, identity, or tenant boundary"
+            ],
+            "requested_tokens": 512,
+            "output_cap": 400,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "config/display.py",
+            "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+            "source_chars": 117,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 400,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "orders/receipt.py",
+            "source_hash": "48079965bfa969507d10dafe4c644bbb7871a6bde700e83fc32d6defd0fa94c4",
+            "source_chars": 159,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 400,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "payments/checkout.py",
+            "source_hash": "2306d62730a20d232953bd5ab8064fdc6b036f9124ce2cc044b3ac2fd77b5ff2",
+            "source_chars": 467,
+            "risk_score": 10,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access",
+              "Retry or repeated execution"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 400,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "tests/test_money.py",
+            "source_hash": "8f960e91c0e0833c8159eb6f63290f0a56e071b6a966c8e619c32c19e7397560",
+            "source_chars": 134,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 400,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "webhooks/handler.py",
+            "source_hash": "4922fe8961a221450559ec80ab70472fbbbcacb5da99c960e87ca8913b59439a",
+            "source_chars": 223,
+            "risk_score": 7,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "Untrusted input boundary"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 400,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          }
+        ],
+        "events": [
+          {
+            "index": 0,
+            "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "kind": "review_started",
+            "mode": "offline",
+            "strategy": "uniform",
+            "budget": {
+              "output_tokens": 2400,
+              "input_chars": 24000,
+              "max_files": 12,
+              "timeout_seconds": 60,
+              "run_seconds": 240
+            },
+            "patch_hash": "0b7d5d578b15c4354c4a0e5ac99b9462b3e4063218f972ea48e9b9d5147aa12c",
+            "hash": "65cab1ed8a1c47d42e14c69094bd7d23bc14d3aee61a603f00ddfa581e55fa05"
+          },
+          {
+            "index": 1,
+            "previous_hash": "65cab1ed8a1c47d42e14c69094bd7d23bc14d3aee61a603f00ddfa581e55fa05",
+            "kind": "file_routed",
+            "path": "billing/money.py",
+            "tier": "standard",
+            "signals": [
+              "Money, identity, or tenant boundary"
+            ],
+            "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+            "source_chars": 286,
+            "output_cap": 0,
+            "hash": "9d0969d793c379ab1959698440c3eed6057a03e80fe4665eb53139f1a202c867"
+          },
+          {
+            "index": 2,
+            "previous_hash": "9d0969d793c379ab1959698440c3eed6057a03e80fe4665eb53139f1a202c867",
+            "kind": "review_response",
+            "path": "billing/money.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "bd6b41b268de09e615d2ec80328f289baa3eb7205dbe25db378204dc56e86b90"
+          },
+          {
+            "index": 3,
+            "previous_hash": "bd6b41b268de09e615d2ec80328f289baa3eb7205dbe25db378204dc56e86b90",
+            "kind": "review_validated",
+            "path": "billing/money.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "b1bd1084be7ed69e5252b65fbe25d3c4d3a1a36ef77ce9584cb112698e49680b"
+          },
+          {
+            "index": 4,
+            "previous_hash": "b1bd1084be7ed69e5252b65fbe25d3c4d3a1a36ef77ce9584cb112698e49680b",
+            "kind": "file_routed",
+            "path": "config/display.py",
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+            "source_chars": 117,
+            "output_cap": 0,
+            "hash": "244cea2ec16339c9f2882df5b5ec9d0961bdb5ad8fd815325a50c25e83cb2e8a"
+          },
+          {
+            "index": 5,
+            "previous_hash": "244cea2ec16339c9f2882df5b5ec9d0961bdb5ad8fd815325a50c25e83cb2e8a",
+            "kind": "review_response",
+            "path": "config/display.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "97c0a61a634a61375c625b30603042880309c912b7814fc72c8f83ad749c1e1e"
+          },
+          {
+            "index": 6,
+            "previous_hash": "97c0a61a634a61375c625b30603042880309c912b7814fc72c8f83ad749c1e1e",
+            "kind": "review_validated",
+            "path": "config/display.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "2cc48d11c2ae5033dfe97d832e51ef9a46051285f5210a657640bbd5ba913007"
+          },
+          {
+            "index": 7,
+            "previous_hash": "2cc48d11c2ae5033dfe97d832e51ef9a46051285f5210a657640bbd5ba913007",
+            "kind": "file_routed",
+            "path": "orders/receipt.py",
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "source_hash": "48079965bfa969507d10dafe4c644bbb7871a6bde700e83fc32d6defd0fa94c4",
+            "source_chars": 159,
+            "output_cap": 0,
+            "hash": "c956d25c411157e8319346d5afa624d338e45b1790306c561d57058a35144c6b"
+          },
+          {
+            "index": 8,
+            "previous_hash": "c956d25c411157e8319346d5afa624d338e45b1790306c561d57058a35144c6b",
+            "kind": "review_response",
+            "path": "orders/receipt.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "2be475744b2049d965768be4ceaf9ce0f271f4e7854c75ac0fca1e8d4a71f202"
+          },
+          {
+            "index": 9,
+            "previous_hash": "2be475744b2049d965768be4ceaf9ce0f271f4e7854c75ac0fca1e8d4a71f202",
+            "kind": "review_validated",
+            "path": "orders/receipt.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "4518d6f079668a43e0c494bd6c7c25216785161482181f30f6bdc60c98a9540f"
+          },
+          {
+            "index": 10,
+            "previous_hash": "4518d6f079668a43e0c494bd6c7c25216785161482181f30f6bdc60c98a9540f",
+            "kind": "file_routed",
+            "path": "payments/checkout.py",
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access",
+              "Retry or repeated execution"
+            ],
+            "source_hash": "2306d62730a20d232953bd5ab8064fdc6b036f9124ce2cc044b3ac2fd77b5ff2",
+            "source_chars": 467,
+            "output_cap": 0,
+            "hash": "4a4952b3147b09132670cea04a6bf84d374560aca1298563378e84f4fbd96fe6"
+          },
+          {
+            "index": 11,
+            "previous_hash": "4a4952b3147b09132670cea04a6bf84d374560aca1298563378e84f4fbd96fe6",
+            "kind": "review_response",
+            "path": "payments/checkout.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "7973a6a862e75c7a84808b4433457670c584c48b2c022a70894aed21b004ec3a"
+          },
+          {
+            "index": 12,
+            "previous_hash": "7973a6a862e75c7a84808b4433457670c584c48b2c022a70894aed21b004ec3a",
+            "kind": "review_validated",
+            "path": "payments/checkout.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "c0e7b0a3939a3e88f2a05a0123fcb67caf74717ad25303cb6e631b8b1a3e50f8"
+          },
+          {
+            "index": 13,
+            "previous_hash": "c0e7b0a3939a3e88f2a05a0123fcb67caf74717ad25303cb6e631b8b1a3e50f8",
+            "kind": "file_routed",
+            "path": "tests/test_money.py",
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "source_hash": "8f960e91c0e0833c8159eb6f63290f0a56e071b6a966c8e619c32c19e7397560",
+            "source_chars": 134,
+            "output_cap": 0,
+            "hash": "af7f93a4d3a8cf787c9834ff9e5efe24a13a940ad7e04eb094d4059fd214ab10"
+          },
+          {
+            "index": 14,
+            "previous_hash": "af7f93a4d3a8cf787c9834ff9e5efe24a13a940ad7e04eb094d4059fd214ab10",
+            "kind": "review_response",
+            "path": "tests/test_money.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "2de290624dd6bc5c8933cea75ecf079ff248cb38b42e2509d8876ef2451ec94a"
+          },
+          {
+            "index": 15,
+            "previous_hash": "2de290624dd6bc5c8933cea75ecf079ff248cb38b42e2509d8876ef2451ec94a",
+            "kind": "review_validated",
+            "path": "tests/test_money.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "663db3a0e850ab529c497bae3f421c247e8a9daf5fdc029465fe313425497369"
+          },
+          {
+            "index": 16,
+            "previous_hash": "663db3a0e850ab529c497bae3f421c247e8a9daf5fdc029465fe313425497369",
+            "kind": "file_routed",
+            "path": "webhooks/handler.py",
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "Untrusted input boundary"
+            ],
+            "source_hash": "4922fe8961a221450559ec80ab70472fbbbcacb5da99c960e87ca8913b59439a",
+            "source_chars": 223,
+            "output_cap": 0,
+            "hash": "26a6f6f8287c28718deb06b0fc0e9f49ee51705016fc8c5250cdc7be7bb041e7"
+          },
+          {
+            "index": 17,
+            "previous_hash": "26a6f6f8287c28718deb06b0fc0e9f49ee51705016fc8c5250cdc7be7bb041e7",
+            "kind": "review_response",
+            "path": "webhooks/handler.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "d3e5653a5fe8148fe94e4424681ddfbe1999e0d137aec38eda3283501d82ddad"
+          },
+          {
+            "index": 18,
+            "previous_hash": "d3e5653a5fe8148fe94e4424681ddfbe1999e0d137aec38eda3283501d82ddad",
+            "kind": "review_validated",
+            "path": "webhooks/handler.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "61b778a900fad4694c23561cabf07690787910a95adce2132c1ffa787523803c"
+          },
+          {
+            "index": 19,
+            "previous_hash": "61b778a900fad4694c23561cabf07690787910a95adce2132c1ffa787523803c",
+            "kind": "review_completed",
+            "summary": {
+              "total_files": 6,
+              "flagged_files": 0,
+              "findings": 0,
+              "reviewed_files": 6,
+              "needs_review": 0,
+              "budget_respected": true
+            },
+            "usage": {
+              "output_tokens_reported": 0,
+              "input_tokens_reported": 0,
+              "output_tokens_accounted": 0,
+              "output_tokens_reserved": 0,
+              "input_chars": 1386,
+              "model_calls": 0,
+              "rule_calls": 6,
+              "unknown_usage_calls": 0
+            },
+            "hash": "c90a12dcf3d25f398d09d73030c183e12ee496141007d93df0c839c6984bf948"
+          }
+        ],
+        "usage": {
+          "output_tokens_reported": 0,
+          "input_tokens_reported": 0,
+          "output_tokens_accounted": 0,
+          "output_tokens_reserved": 0,
+          "input_chars": 1386,
+          "model_calls": 0,
+          "rule_calls": 6,
+          "unknown_usage_calls": 0
+        },
+        "limitations": [
+          "A matching source quote validates location, not the truth of a finding.",
+          "Single-file context can miss cross-file defects.",
+          "No finding is not a safety certification; deferred files require human review.",
+          "Output limits do not cap input tokens, cost, or hardware compute."
+        ],
+        "duration_ms": 1,
+        "summary": {
+          "total_files": 6,
+          "flagged_files": 0,
+          "findings": 0,
+          "reviewed_files": 6,
+          "needs_review": 0,
+          "budget_respected": true
+        },
+        "audit_valid": true
+      }
+    },
+    {
+      "case_id": "checkout_fixed",
+      "strategy": "uniform",
+      "max_files": 12,
+      "score": {
+        "target_files_flagged": 0,
+        "control_files_flagged": 0,
+        "target_files_not_flagged": 0,
+        "file_localization_precision": null,
+        "file_localization_recall": null,
+        "expected_issues": {},
+        "missed_target_files": [],
+        "flagged_control_files": []
+      },
+      "report": {
+        "schema_version": 1,
+        "run_id": "38e7e37acb68",
+        "created_at": "2026-09-05T14:20:32.956726+00:00",
+        "mode": "offline",
+        "model": "deterministic-rules-v1",
+        "strategy": "uniform",
+        "fault_injection": "none",
+        "budget": {
+          "output_tokens": 2400,
+          "input_chars": 24000,
+          "max_files": 12,
+          "timeout_seconds": 60,
+          "run_seconds": 240
+        },
+        "provenance": {
+          "engine_sha256": "32529628fb107605e8220105e45635c79b89e56315c2b583a5ba1ceb46b94a09",
+          "prompt_sha256": "144333eb3ce667e9ab6b9019f80b2cc08b1f14170d88e33b7cccb719aca2d136",
+          "response_schema_sha256": "cb76662d991e3b6da21fed9377706852852e62b81e3c76874669e5c08116b70f",
+          "temperature": 0,
+          "seed": 42,
+          "thinking": false,
+          "context_window": 8192,
+          "model_digest": null,
+          "provider_injected_for_test": false
+        },
+        "patch_hash": "adb839af7c30caaeed76d7418a4543b3dce92a6e470591d54df4a2d298e1f970",
+        "files": [
+          {
+            "path": "billing/money.py",
+            "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+            "source_chars": 286,
+            "risk_score": 5,
+            "tier": "standard",
+            "signals": [
+              "Money, identity, or tenant boundary"
+            ],
+            "requested_tokens": 512,
+            "output_cap": 400,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "config/display.py",
+            "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+            "source_chars": 117,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 400,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "orders/receipt.py",
+            "source_hash": "48079965bfa969507d10dafe4c644bbb7871a6bde700e83fc32d6defd0fa94c4",
+            "source_chars": 159,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 400,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "payments/checkout.py",
+            "source_hash": "ecb24f1377cfade0b1d4e3b4e0a7e87ed4d4265c436cec91c9c4404aad834408",
+            "source_chars": 518,
+            "risk_score": 10,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access",
+              "Retry or repeated execution"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 400,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "tests/test_money.py",
+            "source_hash": "8f960e91c0e0833c8159eb6f63290f0a56e071b6a966c8e619c32c19e7397560",
+            "source_chars": 134,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 400,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "webhooks/handler.py",
+            "source_hash": "12b3619f0449d36e585b0f87a058c07640bdcb3655320c985fc2b8c948d0c6a1",
+            "source_chars": 550,
+            "risk_score": 7,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "Untrusted input boundary"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 400,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          }
+        ],
+        "events": [
+          {
+            "index": 0,
+            "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "kind": "review_started",
+            "mode": "offline",
+            "strategy": "uniform",
+            "budget": {
+              "output_tokens": 2400,
+              "input_chars": 24000,
+              "max_files": 12,
+              "timeout_seconds": 60,
+              "run_seconds": 240
+            },
+            "patch_hash": "adb839af7c30caaeed76d7418a4543b3dce92a6e470591d54df4a2d298e1f970",
+            "hash": "e551e74ddef9209f9bca4ccb67222e760b8e8467c334df5688a9c0030e04bb06"
+          },
+          {
+            "index": 1,
+            "previous_hash": "e551e74ddef9209f9bca4ccb67222e760b8e8467c334df5688a9c0030e04bb06",
+            "kind": "file_routed",
+            "path": "billing/money.py",
+            "tier": "standard",
+            "signals": [
+              "Money, identity, or tenant boundary"
+            ],
+            "source_hash": "883fed6532eb4bd0da4bdc98c31527e1f3744cf36a92f624ac8684dcc4aa85c1",
+            "source_chars": 286,
+            "output_cap": 0,
+            "hash": "66c59d9c6952c95fc8cfe58414cb67e07713ce8d1d6e22acb838f1a8a4ed8d85"
+          },
+          {
+            "index": 2,
+            "previous_hash": "66c59d9c6952c95fc8cfe58414cb67e07713ce8d1d6e22acb838f1a8a4ed8d85",
+            "kind": "review_response",
+            "path": "billing/money.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "12eb5616e008d8d3aa95c99bb21eec633af3a749d1642608e10f08113c62b6d5"
+          },
+          {
+            "index": 3,
+            "previous_hash": "12eb5616e008d8d3aa95c99bb21eec633af3a749d1642608e10f08113c62b6d5",
+            "kind": "review_validated",
+            "path": "billing/money.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "7169fe6fa2a86799b7d9916d3809054a82aa5be5f66bf231be68f03307a7caab"
+          },
+          {
+            "index": 4,
+            "previous_hash": "7169fe6fa2a86799b7d9916d3809054a82aa5be5f66bf231be68f03307a7caab",
+            "kind": "file_routed",
+            "path": "config/display.py",
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "source_hash": "72dab7a04fb4992a03bc91b079daf44e9c88e778389d5630898195e3d8daec06",
+            "source_chars": 117,
+            "output_cap": 0,
+            "hash": "dff8f3660391e22ed9e4c35890e07c4ea4cdcff4bebcac1eb2c8871b66871708"
+          },
+          {
+            "index": 5,
+            "previous_hash": "dff8f3660391e22ed9e4c35890e07c4ea4cdcff4bebcac1eb2c8871b66871708",
+            "kind": "review_response",
+            "path": "config/display.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "32639a00a9906e2fee2142e54e56e4e8e651b4dcb2af7a457858ca878c15d042"
+          },
+          {
+            "index": 6,
+            "previous_hash": "32639a00a9906e2fee2142e54e56e4e8e651b4dcb2af7a457858ca878c15d042",
+            "kind": "review_validated",
+            "path": "config/display.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "0e89b2ef52a3f63f2f30007660311abb52eac09a04d4b115fce19b5b3549e1ab"
+          },
+          {
+            "index": 7,
+            "previous_hash": "0e89b2ef52a3f63f2f30007660311abb52eac09a04d4b115fce19b5b3549e1ab",
+            "kind": "file_routed",
+            "path": "orders/receipt.py",
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "source_hash": "48079965bfa969507d10dafe4c644bbb7871a6bde700e83fc32d6defd0fa94c4",
+            "source_chars": 159,
+            "output_cap": 0,
+            "hash": "3e75fcb9c4d23bf11ef226e4b1dbb4a6b0ef320b368fd69b2f2ec96eb9b775fb"
+          },
+          {
+            "index": 8,
+            "previous_hash": "3e75fcb9c4d23bf11ef226e4b1dbb4a6b0ef320b368fd69b2f2ec96eb9b775fb",
+            "kind": "review_response",
+            "path": "orders/receipt.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "b6f566fd5837f1621b87bc8428302c2bbf4ce5387f2d1b9b336638b882c296e4"
+          },
+          {
+            "index": 9,
+            "previous_hash": "b6f566fd5837f1621b87bc8428302c2bbf4ce5387f2d1b9b336638b882c296e4",
+            "kind": "review_validated",
+            "path": "orders/receipt.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "2a6d75b6a11ce85e0464c7f6c3fa50120f22a5a2c65ef7a45cb5aeb9e8c83b40"
+          },
+          {
+            "index": 10,
+            "previous_hash": "2a6d75b6a11ce85e0464c7f6c3fa50120f22a5a2c65ef7a45cb5aeb9e8c83b40",
+            "kind": "file_routed",
+            "path": "payments/checkout.py",
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access",
+              "Retry or repeated execution"
+            ],
+            "source_hash": "ecb24f1377cfade0b1d4e3b4e0a7e87ed4d4265c436cec91c9c4404aad834408",
+            "source_chars": 518,
+            "output_cap": 0,
+            "hash": "7625e1ce05caaebdeb39e937656e0276d54283dd87676f5b17844d4f85cc8f0a"
+          },
+          {
+            "index": 11,
+            "previous_hash": "7625e1ce05caaebdeb39e937656e0276d54283dd87676f5b17844d4f85cc8f0a",
+            "kind": "review_response",
+            "path": "payments/checkout.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "f4a9d1736cb1a125b52c1b599fd1f2c762d970e90529a1d148883f4aae3cc3a4"
+          },
+          {
+            "index": 12,
+            "previous_hash": "f4a9d1736cb1a125b52c1b599fd1f2c762d970e90529a1d148883f4aae3cc3a4",
+            "kind": "review_validated",
+            "path": "payments/checkout.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "1216a6254f0db6912dffaf50c7e4c0c1a1fc17dd29539c831e20a3e364a92f67"
+          },
+          {
+            "index": 13,
+            "previous_hash": "1216a6254f0db6912dffaf50c7e4c0c1a1fc17dd29539c831e20a3e364a92f67",
+            "kind": "file_routed",
+            "path": "tests/test_money.py",
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "source_hash": "8f960e91c0e0833c8159eb6f63290f0a56e071b6a966c8e619c32c19e7397560",
+            "source_chars": 134,
+            "output_cap": 0,
+            "hash": "0dd59fe577d63307c10ec1e0dae6029e2ed6ec2655e6e49ed355013348cddf48"
+          },
+          {
+            "index": 14,
+            "previous_hash": "0dd59fe577d63307c10ec1e0dae6029e2ed6ec2655e6e49ed355013348cddf48",
+            "kind": "review_response",
+            "path": "tests/test_money.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "afe49f33f8a3ef44fb406a40dbea7df645c9359955f8bf6e3c42b110ed8acf24"
+          },
+          {
+            "index": 15,
+            "previous_hash": "afe49f33f8a3ef44fb406a40dbea7df645c9359955f8bf6e3c42b110ed8acf24",
+            "kind": "review_validated",
+            "path": "tests/test_money.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "30841eb4b5bcdb0c6c224f6a12baed342b401fe8d04949fe044ad1d48d7a2b47"
+          },
+          {
+            "index": 16,
+            "previous_hash": "30841eb4b5bcdb0c6c224f6a12baed342b401fe8d04949fe044ad1d48d7a2b47",
+            "kind": "file_routed",
+            "path": "webhooks/handler.py",
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "Untrusted input boundary"
+            ],
+            "source_hash": "12b3619f0449d36e585b0f87a058c07640bdcb3655320c985fc2b8c948d0c6a1",
+            "source_chars": 550,
+            "output_cap": 0,
+            "hash": "54fbfe2e8592abdffe8449e2e687154c76e00092cfca3e0e62b1ee88161e3989"
+          },
+          {
+            "index": 17,
+            "previous_hash": "54fbfe2e8592abdffe8449e2e687154c76e00092cfca3e0e62b1ee88161e3989",
+            "kind": "review_response",
+            "path": "webhooks/handler.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "53e54fe3caa780b9c922051466a513040a9c1cc7cd37fce97299f585615087e7"
+          },
+          {
+            "index": 18,
+            "previous_hash": "53e54fe3caa780b9c922051466a513040a9c1cc7cd37fce97299f585615087e7",
+            "kind": "review_validated",
+            "path": "webhooks/handler.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "1ec81be3f173f6d03b5485911956a3b83960c568cf3cd3e7d222bd38427064ee"
+          },
+          {
+            "index": 19,
+            "previous_hash": "1ec81be3f173f6d03b5485911956a3b83960c568cf3cd3e7d222bd38427064ee",
+            "kind": "review_completed",
+            "summary": {
+              "total_files": 6,
+              "flagged_files": 0,
+              "findings": 0,
+              "reviewed_files": 6,
+              "needs_review": 0,
+              "budget_respected": true
+            },
+            "usage": {
+              "output_tokens_reported": 0,
+              "input_tokens_reported": 0,
+              "output_tokens_accounted": 0,
+              "output_tokens_reserved": 0,
+              "input_chars": 1764,
+              "model_calls": 0,
+              "rule_calls": 6,
+              "unknown_usage_calls": 0
+            },
+            "hash": "2afcc83d09b2c83766dbf6adc3db50a397d6a387110a00478b6af4c184e4b915"
+          }
+        ],
+        "usage": {
+          "output_tokens_reported": 0,
+          "input_tokens_reported": 0,
+          "output_tokens_accounted": 0,
+          "output_tokens_reserved": 0,
+          "input_chars": 1764,
+          "model_calls": 0,
+          "rule_calls": 6,
+          "unknown_usage_calls": 0
+        },
+        "limitations": [
+          "A matching source quote validates location, not the truth of a finding.",
+          "Single-file context can miss cross-file defects.",
+          "No finding is not a safety certification; deferred files require human review.",
+          "Output limits do not cap input tokens, cost, or hardware compute."
+        ],
+        "duration_ms": 1,
+        "summary": {
+          "total_files": 6,
+          "flagged_files": 0,
+          "findings": 0,
+          "reviewed_files": 6,
+          "needs_review": 0,
+          "budget_respected": true
+        },
+        "audit_valid": true
+      }
+    },
+    {
+      "case_id": "tenant",
+      "strategy": "uniform",
+      "max_files": 12,
+      "score": {
+        "target_files_flagged": 0,
+        "control_files_flagged": 0,
+        "target_files_not_flagged": 1,
+        "file_localization_precision": null,
+        "file_localization_recall": 0.0,
+        "expected_issues": {
+          "api/invoices.py": "Any authenticated user can fetch another tenant's invoice because the query lacks tenant ownership filtering."
+        },
+        "missed_target_files": [
+          "api/invoices.py"
+        ],
+        "flagged_control_files": []
+      },
+      "report": {
+        "schema_version": 1,
+        "run_id": "8d08f0d0448e",
+        "created_at": "2026-09-05T14:20:32.960690+00:00",
+        "mode": "offline",
+        "model": "deterministic-rules-v1",
+        "strategy": "uniform",
+        "fault_injection": "none",
+        "budget": {
+          "output_tokens": 2400,
+          "input_chars": 24000,
+          "max_files": 12,
+          "timeout_seconds": 60,
+          "run_seconds": 240
+        },
+        "provenance": {
+          "engine_sha256": "32529628fb107605e8220105e45635c79b89e56315c2b583a5ba1ceb46b94a09",
+          "prompt_sha256": "144333eb3ce667e9ab6b9019f80b2cc08b1f14170d88e33b7cccb719aca2d136",
+          "response_schema_sha256": "cb76662d991e3b6da21fed9377706852852e62b81e3c76874669e5c08116b70f",
+          "temperature": 0,
+          "seed": 42,
+          "thinking": false,
+          "context_window": 8192,
+          "model_digest": null,
+          "provider_injected_for_test": false
+        },
+        "patch_hash": "5a17beb8b5fb361c2e2dec52344a04a993df8cd6d8853d1deed86bc07f520004",
+        "files": [
+          {
+            "path": "api/invoices.py",
+            "source_hash": "d543c50b1069e0277767b60a51f67fa6df5e3ac8e57672debf673855433dd01b",
+            "source_chars": 275,
+            "risk_score": 8,
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access"
+            ],
+            "requested_tokens": 768,
+            "output_cap": 600,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "api/profile.py",
+            "source_hash": "73a0d1642af08c770b1546673f7baaee70e328afb61b178438e9e7234a2de313",
+            "source_chars": 217,
+            "risk_score": 4,
+            "tier": "standard",
+            "signals": [
+              "External side effect or database access"
+            ],
+            "requested_tokens": 512,
+            "output_cap": 600,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "tests/test_pagination.py",
+            "source_hash": "d45ac68a9079522243ac6bd2bb2f2f75a547baa34378165237dd94b16efdfc42",
+            "source_chars": 120,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 600,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          },
+          {
+            "path": "utils/pagination.py",
+            "source_hash": "99d55a624a3662f3ecbfd6820a62ab7d1e8e693b47b427a007ad98d7ebf586f7",
+            "source_chars": 157,
+            "risk_score": 1,
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "requested_tokens": 256,
+            "output_cap": 600,
+            "status": "no_finding",
+            "findings": [],
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "reported_tokens": 0,
+            "duration_ms": 0
+          }
+        ],
+        "events": [
+          {
+            "index": 0,
+            "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "kind": "review_started",
+            "mode": "offline",
+            "strategy": "uniform",
+            "budget": {
+              "output_tokens": 2400,
+              "input_chars": 24000,
+              "max_files": 12,
+              "timeout_seconds": 60,
+              "run_seconds": 240
+            },
+            "patch_hash": "5a17beb8b5fb361c2e2dec52344a04a993df8cd6d8853d1deed86bc07f520004",
+            "hash": "02298951bf237b4fe996098c66f1bfe23334203ef791216aa9fe09ed18e24cbc"
+          },
+          {
+            "index": 1,
+            "previous_hash": "02298951bf237b4fe996098c66f1bfe23334203ef791216aa9fe09ed18e24cbc",
+            "kind": "file_routed",
+            "path": "api/invoices.py",
+            "tier": "deep",
+            "signals": [
+              "Money, identity, or tenant boundary",
+              "External side effect or database access"
+            ],
+            "source_hash": "d543c50b1069e0277767b60a51f67fa6df5e3ac8e57672debf673855433dd01b",
+            "source_chars": 275,
+            "output_cap": 0,
+            "hash": "7b246046cfb7a9df0e27b97d27954ea3690f8f63687f2bea13f9ddacd4113211"
+          },
+          {
+            "index": 2,
+            "previous_hash": "7b246046cfb7a9df0e27b97d27954ea3690f8f63687f2bea13f9ddacd4113211",
+            "kind": "review_response",
+            "path": "api/invoices.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "170c052caa6712b47f295e14aea27f115fa13fbbc1b1140bb650f213a05c2219"
+          },
+          {
+            "index": 3,
+            "previous_hash": "170c052caa6712b47f295e14aea27f115fa13fbbc1b1140bb650f213a05c2219",
+            "kind": "review_validated",
+            "path": "api/invoices.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "07510292fae451973c8405ca551b22d64c128b021b4afd8ad2b002f4ce3b23a7"
+          },
+          {
+            "index": 4,
+            "previous_hash": "07510292fae451973c8405ca551b22d64c128b021b4afd8ad2b002f4ce3b23a7",
+            "kind": "file_routed",
+            "path": "api/profile.py",
+            "tier": "standard",
+            "signals": [
+              "External side effect or database access"
+            ],
+            "source_hash": "73a0d1642af08c770b1546673f7baaee70e328afb61b178438e9e7234a2de313",
+            "source_chars": 217,
+            "output_cap": 0,
+            "hash": "621c9bb6df72f0290eae87178e2fa520e698500394e875204f89d20b4eab4bab"
+          },
+          {
+            "index": 5,
+            "previous_hash": "621c9bb6df72f0290eae87178e2fa520e698500394e875204f89d20b4eab4bab",
+            "kind": "review_response",
+            "path": "api/profile.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "d9f9db5fbeaee1811fd99ec28129e17e6d6a573c3fe5624da19b9844fc09bee4"
+          },
+          {
+            "index": 6,
+            "previous_hash": "d9f9db5fbeaee1811fd99ec28129e17e6d6a573c3fe5624da19b9844fc09bee4",
+            "kind": "review_validated",
+            "path": "api/profile.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "4315545368af8f013b9b75c75a13c21896661f966808f87d000c28b9fe492baa"
+          },
+          {
+            "index": 7,
+            "previous_hash": "4315545368af8f013b9b75c75a13c21896661f966808f87d000c28b9fe492baa",
+            "kind": "file_routed",
+            "path": "tests/test_pagination.py",
+            "tier": "brief",
+            "signals": [
+              "Test, documentation, or display-only path"
+            ],
+            "source_hash": "d45ac68a9079522243ac6bd2bb2f2f75a547baa34378165237dd94b16efdfc42",
+            "source_chars": 120,
+            "output_cap": 0,
+            "hash": "1e3f0c0754de6bc06930016908b8a965511da712f495b12fcb6bc669381a8e67"
+          },
+          {
+            "index": 8,
+            "previous_hash": "1e3f0c0754de6bc06930016908b8a965511da712f495b12fcb6bc669381a8e67",
+            "kind": "review_response",
+            "path": "tests/test_pagination.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "0529ca6207d21f9e6c8dda79e2230b1ef91a74c4d64f27605ce3bdd7561b29b3"
+          },
+          {
+            "index": 9,
+            "previous_hash": "0529ca6207d21f9e6c8dda79e2230b1ef91a74c4d64f27605ce3bdd7561b29b3",
+            "kind": "review_validated",
+            "path": "tests/test_pagination.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "7750e389a713585b3dc47363c1ce7e67ce45cc6e382906cf53522ce9a8e8d324"
+          },
+          {
+            "index": 10,
+            "previous_hash": "7750e389a713585b3dc47363c1ce7e67ce45cc6e382906cf53522ce9a8e8d324",
+            "kind": "file_routed",
+            "path": "utils/pagination.py",
+            "tier": "brief",
+            "signals": [
+              "No configured priority signal"
+            ],
+            "source_hash": "99d55a624a3662f3ecbfd6820a62ab7d1e8e693b47b427a007ad98d7ebf586f7",
+            "source_chars": 157,
+            "output_cap": 0,
+            "hash": "f1beee9b37d494c0bed22a5c77d7667e66d8c953da9463631382f2d5265a6dca"
+          },
+          {
+            "index": 11,
+            "previous_hash": "f1beee9b37d494c0bed22a5c77d7667e66d8c953da9463631382f2d5265a6dca",
+            "kind": "review_response",
+            "path": "utils/pagination.py",
+            "response_text": "{\"decision\": \"no_finding\", \"summary\": \"Rule scan only. Semantic AI analysis was not run.\", \"findings\": []}",
+            "reported_output_tokens": 0,
+            "reported_input_tokens": 0,
+            "stop_reason": "stop",
+            "model": null,
+            "hash": "aeebc82331785e4f30910da012fdf0b2a457634a61227172dc3b8673c3f9df2d"
+          },
+          {
+            "index": 12,
+            "previous_hash": "aeebc82331785e4f30910da012fdf0b2a457634a61227172dc3b8673c3f9df2d",
+            "kind": "review_validated",
+            "path": "utils/pagination.py",
+            "status": "no_finding",
+            "findings": [],
+            "reported_tokens": 0,
+            "summary": "Rule scan only. Semantic AI analysis was not run.",
+            "hash": "6afbba8aa001cc89f05df496aae37dbb6b8c9eeec0e686f2d48281e9e1d07044"
+          },
+          {
+            "index": 13,
+            "previous_hash": "6afbba8aa001cc89f05df496aae37dbb6b8c9eeec0e686f2d48281e9e1d07044",
+            "kind": "review_completed",
+            "summary": {
+              "total_files": 4,
+              "flagged_files": 0,
+              "findings": 0,
+              "reviewed_files": 4,
+              "needs_review": 0,
+              "budget_respected": true
+            },
+            "usage": {
+              "output_tokens_reported": 0,
+              "input_tokens_reported": 0,
+              "output_tokens_accounted": 0,
+              "output_tokens_reserved": 0,
+              "input_chars": 769,
+              "model_calls": 0,
+              "rule_calls": 4,
+              "unknown_usage_calls": 0
+            },
+            "hash": "37a4c23717a0b8782e8d147662bf0bf13a854ae2ab1c807fd56585cf7846a81a"
+          }
+        ],
+        "usage": {
+          "output_tokens_reported": 0,
+          "input_tokens_reported": 0,
+          "output_tokens_accounted": 0,
+          "output_tokens_reserved": 0,
+          "input_chars": 769,
+          "model_calls": 0,
+          "rule_calls": 4,
+          "unknown_usage_calls": 0
+        },
+        "limitations": [
+          "A matching source quote validates location, not the truth of a finding.",
+          "Single-file context can miss cross-file defects.",
+          "No finding is not a safety certification; deferred files require human review.",
+          "Output limits do not cap input tokens, cost, or hardware compute."
+        ],
+        "duration_ms": 0,
+        "summary": {
+          "total_files": 4,
+          "flagged_files": 0,
+          "findings": 0,
+          "reviewed_files": 4,
+          "needs_review": 0,
+          "budget_respected": true
+        },
+        "audit_valid": true
+      }
+    }
+  ],
+  "complete": true
+}

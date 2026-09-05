@@ -1,0 +1,71 @@
+{
+  "status": "historical_artifacts_quarantined",
+  "current_training_weights": "Preserved. grpo_output/adapter_model.safetensors belongs to Qwen2.5-1.5B, not the historical Qwen3-labeled simulation.",
+  "artifacts": [
+    {
+      "path": "grpo_output/legacy_unverified/ablation_results.json",
+      "sha256": "747baf980fec884ce5c6fd86ac0a5804ee91826f13ff3fa3ffc78009c2fba6a3",
+      "status": "historical_not_valid_efficacy_evidence",
+      "reason": "Post-hoc trace slicing did not intervene on actual model decoding; cannot support causal ablation claims."
+    },
+    {
+      "path": "grpo_output/legacy_unverified/before_after_thinking.png",
+      "sha256": "dad243d8dfa0ad27cd6738354f863eeb97cd1d341788f0cf5f2169ea5218d893",
+      "status": "historical_not_valid_efficacy_evidence",
+      "reason": "Generated from authored/oracle demo traces and labeled as trained-model behavior."
+    },
+    {
+      "path": "grpo_output/legacy_unverified/calibration_plot.png",
+      "sha256": "ea63c3ad9c0dc5c91dacbd38c55b38ba98e78105913488f0b291a9b1462a06b9",
+      "status": "historical_not_valid_efficacy_evidence",
+      "reason": "Sampled synthetic lengths and label-informed band choices, not measured calibration."
+    },
+    {
+      "path": "grpo_output/legacy_unverified/eval_baseline_vs_trained.json",
+      "sha256": "4fcb9c39b18f6fda9ca605c4be79d11821a1f2b5354e48d6e7bcb7df40f43877",
+      "status": "historical_not_valid_efficacy_evidence",
+      "reason": "mode=live_env_simulation; heuristics were mislabeled as trained/base model."
+    },
+    {
+      "path": "grpo_output/legacy_unverified/eval_baseline_vs_trained.png",
+      "sha256": "b9d1d8c2cf617d2cb1061f3097337e1cd102bc9de664b9ee480818382054c9a6",
+      "status": "historical_not_valid_efficacy_evidence",
+      "reason": "Heuristic simulation was plotted under trained/base-model labels."
+    },
+    {
+      "path": "grpo_output/legacy_unverified/improvement_panel.png",
+      "sha256": "c7467e131ddde5f466876cb2958db713625371cae28cb6a2a7af83a732284221",
+      "status": "historical_not_valid_efficacy_evidence",
+      "reason": "Contains hard-coded efficacy values and fallback fabricated metrics."
+    },
+    {
+      "path": "grpo_output/legacy_unverified/thinking_allocation.png",
+      "sha256": "8c067c4b4df0ccc0e83db1d9d30b266cf24f7fd321c7f155ffa89ffd0e8105b0",
+      "status": "historical_not_valid_efficacy_evidence",
+      "reason": "Generator directly used ground-truth labels to allocate synthetic reasoning lengths."
+    },
+    {
+      "path": "grpo_output/legacy_unverified/training_curves.png",
+      "sha256": "f2c917d196ed2f11225803757c1518bfa5a46b22685b8361dc06478d1e7f90c0",
+      "status": "historical_not_valid_efficacy_evidence",
+      "reason": "Historical plot provenance may differ from current checkpoint. Replaced with actual trainer-state plot."
+    },
+    {
+      "path": "grpo_output/legacy_unverified/transfer_metrics.json",
+      "sha256": "83418be6cd7631b83c1262c277ce36f232b6132a3221210bc594e4913a03c96e",
+      "status": "historical_not_valid_efficacy_evidence",
+      "reason": "Hand-authored feature simulation; no actual model inference or independent held-out evaluation."
+    },
+    {
+      "path": "grpo_output/legacy_unverified/transfer_results.png",
+      "sha256": "dade3176268178596263833e068b92cac2ae8af7db83649226b56aaa0ed95dc6",
+      "status": "historical_not_valid_efficacy_evidence",
+      "reason": "Sampled synthetic reasoning lengths; no actual model inference."
+    }
+  ],
+  "demo_traces": {
+    "path": "data/demo_traces.json",
+    "status": "scripted illustrative traces; not generated model evidence",
+    "sha256": "66fef006b5246ab229d3a025ff140b31f38179842c98c311dae8ba8111acf8b4"
+  }
+}
