@@ -103,7 +103,7 @@ This is **not** a code-review tool. The CVE triage is a *substrate*. The contrib
 |---|---|---|
 | HuggingFace Space (running container) | https://huggingface.co/spaces/lucid987654/code-review-env-v3 | URL above |
 | Colab notebook (judge can re-run from scratch) | `train_colab.ipynb` — sized for T4 free tier | [`train_colab.ipynb`](train_colab.ipynb) |
-| GitHub source-of-truth | Tagged commits, atomic v2.2 push | https://github.com/subwaycookiecrunch/Meta-project |
+| GitHub source-of-truth | Tagged commits, atomic v2.2 push | https://github.com/subwaycookiecrunch/Meta-final-round- |
 | OpenEnv manifest | `openenv.yaml` v3.2.0 with full reproducibility metadata | [`openenv.yaml`](openenv.yaml) |
 | Pinned dependencies | `requirements.txt` with explicit versions | `requirements.txt` |
 
@@ -124,8 +124,8 @@ This is **not** a code-review tool. The CVE triage is a *substrate*. The contrib
 ## How to reproduce key results from a fresh checkout
 
 ```bash
-git clone https://github.com/subwaycookiecrunch/Meta-project
-cd Meta-project
+git clone https://github.com/subwaycookiecrunch/Meta-final-round-
+cd Meta-final-round-
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 

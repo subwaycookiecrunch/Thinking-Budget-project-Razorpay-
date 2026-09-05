@@ -1,6 +1,6 @@
 # The Thinking Budget: Calibrated Metacognition as Reinforcement Learning
 
-**Meta PyTorch OpenEnv Hackathon 2026 · Primary theme: #5 Wild Card · Cross-listed: 3.1 World Modeling → Professional Tasks**
+**Razorpay AI Buildathon 2026 — Open Track. Built with PyTorch OpenEnv.**
 
 > An RL environment + auxiliary objective that trains a reasoning LLM to
 > *predict how hard a problem is* before solving it, then deliver exactly
@@ -360,8 +360,8 @@ never seen, on bug *types* never observed during training.
 All code is in this repository.  The full reproduction is:
 
 ```bash
-git clone https://github.com/subwaycookiecrunch/Meta-project
-cd Meta-project
+git clone https://github.com/subwaycookiecrunch/Meta-final-round-
+cd Meta-final-round-
 pip install -r requirements.txt    # see notebook for exact pins
 python train_grpo.py                # ~6–10 hours on a single A100
 python eval_baseline.py             # produces eval_baseline_vs_trained.png
@@ -377,7 +377,7 @@ episode in a fresh environment during GRPO.
 
 ## 10. Acknowledgements
 
-Built for the Meta PyTorch OpenEnv Hackathon 2026.  We thank the OpenEnv
+Built with PyTorch OpenEnv. Submitted to the Razorpay AI Buildathon 2026.  We thank the OpenEnv
 maintainers for the `MCPEnvironment` substrate, the TRL team for
 GRPOTrainer + custom `reward_funcs`, and Unsloth for the 4-bit + LoRA
 training stack that fits Qwen3-1.7B comfortably under the HF Space
@@ -385,5 +385,5 @@ training stack that fits Qwen3-1.7B comfortably under the HF Space
 
 ---
 
-*Repository:* https://github.com/subwaycookiecrunch/Meta-project
+*Repository:* https://github.com/subwaycookiecrunch/Meta-final-round-
 *Live Space:* https://huggingface.co/spaces/lucid987654/code-review-env-v3

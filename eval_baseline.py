@@ -196,7 +196,7 @@ def evaluate(adapter_path=None, label="Baseline"):
 
 
 # ── Plot ───────────────────────────────────────────────────────────
-def plot_comparison(baseline_scores, trained_scores):
+def plot_comparison(baseline_scores, trained_scores, is_simulated=False):
     fig, ax = plt.subplots(figsize=(11, 6))
     n = len(baseline_scores)
     x = list(range(n))
@@ -212,8 +212,10 @@ def plot_comparison(baseline_scores, trained_scores):
     ax.set_xticks(x)
     ax.set_xticklabels([f"seed={s}" for s in EVAL_SEEDS])
     ax.set_ylabel("Total Score (env reward)", fontsize=12)
-    ax.set_title("CodeReviewEnv v3 — Baseline vs GRPO-Trained Qwen3-1.7B",
-                 fontsize=14, fontweight='bold')
+    title = "CodeReviewEnv v3 — Baseline vs GRPO-Trained Qwen3-1.7B"
+    if is_simulated:
+        title += " (simulated)"
+    ax.set_title(title, fontsize=14, fontweight='bold')
     ax.set_ylim(0, max(1.0, max(baseline_scores + trained_scores) * 1.2))
     ax.legend(fontsize=11)
     ax.grid(True, alpha=0.3, axis='y')
@@ -235,7 +237,7 @@ def plot_comparison(baseline_scores, trained_scores):
 def run_simulated_episode(policy: str, seed: int) -> float:
     """Run simulated episode against live CodeReviewEnvironment without requiring PyTorch model weights."""
     from code_review_env.server.environment import CodeReviewEnvironment
-    from demo import agent_blind_skip, agent_smart_investigator
+    from demo import heuristic_agent_blind_skip, heuristic_agent_smart_investigator
     env = CodeReviewEnvironment()
     obs = env.reset(seed=seed, difficulty=DIFFICULTY)
     context = obs.metadata.get("context", "")
@@ -244,9 +246,9 @@ def run_simulated_episode(policy: str, seed: int) -> float:
     cve_desc = m.group(1) if m else ""
 
     if policy == "baseline":
-        result = agent_blind_skip(env, files)
+        result = heuristic_agent_blind_skip(env, files)
     else:
-        result = agent_smart_investigator(env, files, cve_desc)
+        result = heuristic_agent_smart_investigator(env, files, cve_desc)
 
     m_score = re.search(r'TOTAL SCORE: ([\d.]+)', result)
     return float(m_score.group(1)) if m_score else 0.0
@@ -273,6 +275,7 @@ def main():
             use_gpu = False
 
     if not use_gpu:
+        print('⚠️  No GPU detected. Running simulated comparison using heuristic proxies.')
         print(f"\n{'='*70}\n  Live Environment Evaluation (Simulated Heuristic vs Baseline)\n{'='*70}")
         baseline_scores = []
         trained_scores = []
@@ -310,7 +313,9 @@ def main():
         json.dump(results, f, indent=2)
     print(f"\nSaved comparison data: {OUT_JSON}")
 
-    plot_comparison(baseline_scores, trained_scores)
+    plot_comparison(baseline_scores, trained_scores, is_simulated=not use_gpu)
+    
+    print('ℹ️  For real model evaluation, run on A10G GPU: python train_grpo.py && python eval_baseline.py')
 
 
 if __name__ == "__main__":

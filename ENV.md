@@ -144,8 +144,8 @@ This makes the agent's resource consumption **observable in the observation spac
 ## 7. Reproducing the environment locally
 
 ```bash
-git clone https://github.com/subwaycookiecrunch/Meta-project
-cd Meta-project
+git clone https://github.com/subwaycookiecrunch/Meta-final-round-
+cd Meta-final-round-
 pip install -r requirements.txt
 python -m uvicorn server.environment:app --host 0.0.0.0 --port 7860
 ```

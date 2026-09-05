@@ -29,7 +29,7 @@ Reasoning models think the same amount on everything. A one line variable declar
 
 The model learns to skim easy files and deep dive on suspicious ones. 6x thinking ratio between bugs and safe files, up from basically flat.
 
-[Try it](https://huggingface.co/spaces/lucid987654/code-review-env-v3) · [GitHub](https://github.com/subwaycookiecrunch/Meta-project) · [Blog](blog_post.md) · [Paper](PAPER.md)
+[Try it](https://huggingface.co/spaces/lucid987654/code-review-env-v3) · [GitHub](https://github.com/subwaycookiecrunch/Meta-final-round-) · [Blog](blog_post.md) · [Paper](PAPER.md)
 
 ### Quick Test & Verification
 ```bash
@@ -58,17 +58,19 @@ heap allocation. This is the bug.
 
 ## Numbers
 
-| Metric | Before | After |
+Results from heuristic agent proxies approximating trained model behavior. For real model metrics, train on A10G GPU via `train_grpo.py`.
+
+| Metric | Before | After (simulated) |
 |---|---:|---:|
 | Thinking on safe files | 170 chars | **78 chars** |
 | Thinking on buggy files | 182 chars | **473 chars** |
 | Bug vs safe ratio | 1.07x | **6.06x** |
 | Calibration accuracy | 33% (random) | **88%** |
 | F1 on triage episodes | 0.14 | **1.00** |
-| Transfer F1 (unseen domain) | 0.28 | **1.00** |
+| Transfer F1 (unseen domain) | 0.28 | **0.67** |
 | Adversarial attacks defeated | 0 | **5/5** |
 
-Trained on a single A10G in about 12 hours. Qwen3 1.7B with LoRA r=16, 4 bit quantization.
+Training target: single A10G, ~12 hours. Qwen3 1.7B with LoRA r=16, 4 bit quantization.
 
 ### Ablations
 
@@ -92,7 +94,7 @@ The allocation is in the weights, not the scaffolding. Run `python scripts/run_a
 
 ## The environment
 
-Security code review. 150 real CVEs from NVD (Log4Shell, Dirty COW, PwnKit, BlueKeep, Zerologon, etc). 2,892 source files. The agent gets a CVE description and file paths but can't see code until it calls `read_file`, which costs investigation points. Budget is `2 × number_of_files` so you can't just read everything.
+Security code review over a synthetic training environment. 150 CVE descriptions sourced from NVD (Log4Shell, Dirty COW, PwnKit, BlueKeep, Zerologon, etc) are paired with generated code scenarios across 2,922 source files. The code snippets are synthetic (not scraped from real repos) but reflect realistic vulnerability patterns matching each CVE type. The agent gets a CVE description and file paths but can't see code until it calls `read_file`, which costs investigation points. Budget is `2 × number_of_files` so you can't just read everything.
 
 Six MCP tools:
 
@@ -130,8 +132,9 @@ Full writeup in [`SAFEGUARDS.md`](SAFEGUARDS.md).
 
 ## Transfer
 
-Ran the trained policy on 5 episodes from completely held-out production domains.
-- **Payment Processing PR (`TR-CR-001`)**: A 12-file order-payment refactor introducing a race condition that double-charges customers when idempotency tokens are dropped. The model allocated **680 characters of deep thinking** to `src/api/orders/create.ts` and `src/api/payments/charge.ts` (the exact bug locations), while skimming `package.json` and type definitions in under 45 characters.
+Ran a simulated trained policy (risk-driven heuristic approximating the GRPO-learned allocation pattern) on 5 held-out production domain episodes. The simulation uses structural features (churn, complexity) without ground-truth labels to approximate how the trained model allocates compute.
+
+- **Payment Processing PR (`TR-CR-001`)**: 12-file order-payment refactor with a race condition causing customer double-charging when idempotency tokens are dropped.
 - **JWT Auth Bypass (`TR-CR-002`)**: Path prefix regex flaw allowing unauthenticated access.
 - **ML Training Pipeline (`TR-CR-003`)**: Silent non-determinism regression in torch.compile.
 - **React Stale Closure (`TR-CR-004`)**: State synchronization defect.
@@ -140,9 +143,9 @@ Ran the trained policy on 5 episodes from completely held-out production domains
 | Policy | F1 | Thinking ratio |
 |---|---:|---:|
 | Untrained baseline | 0.28 | 1.29x |
-| Trained policy | **1.00** | **5.24x** |
+| Simulated trained policy | **0.67** | **3.30x** |
 
-5 episodes is small, I know. But the allocation pattern (long on hard, short on easy) held across all five consistently. That's not what memorization looks like.
+> **Note:** These numbers are from a heuristic proxy that approximates the trained model's behavior using structural risk features. For real model evaluation, run `train_grpo.py` on A10G GPU followed by inference. The imperfect F1 reflects realistic feature overlap — safe utility files (e.g., distributed lock helpers) often have higher complexity metrics than the actual bug files.
 
 ## Before/after example
 
@@ -186,7 +189,7 @@ Same model, same CVE, same file. Only difference is the metacognitive reward dur
 
 **Retrain it:** Click the Colab badge below. Clones the repo, installs deps, runs training. About 3 to 5 hours on A10G.
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/subwaycookiecrunch/Meta-project/blob/main/train_colab.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/subwaycookiecrunch/Meta-final-round-/blob/main/train_colab.ipynb)
 
 **Run locally:**
 
@@ -249,7 +252,7 @@ python eval_baseline.py
 ## Links
 
 - HF Space: https://huggingface.co/spaces/lucid987654/code-review-env-v3
-- Colab: [train_colab.ipynb](https://colab.research.google.com/github/subwaycookiecrunch/Meta-project/blob/main/train_colab.ipynb)
-- GitHub: https://github.com/subwaycookiecrunch/Meta-project
+- Colab: [train_colab.ipynb](https://colab.research.google.com/github/subwaycookiecrunch/Meta-final-round-/blob/main/train_colab.ipynb)
+- GitHub: https://github.com/subwaycookiecrunch/Meta-final-round-
 
-MIT License. Built with PyTorch OpenEnv for compute-adaptive reasoning and evaluated on mission-critical software and payment triage workflows.
+MIT License. Built with PyTorch OpenEnv for compute-adaptive reasoning. Submitted to the Razorpay AI Buildathon 2026 — Open Track.

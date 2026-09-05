@@ -19,7 +19,7 @@ What if the model could learn *where* to think hard, not just *what* to think?
 
 ![Before vs After, untrained model thinks the same on everything, trained model focuses on bugs](https://huggingface.co/spaces/lucid987654/code-review-env-v3/resolve/main/grpo_output/before_after_thinking.png)
 
-[Try it yourself →](https://huggingface.co/spaces/lucid987654/code-review-env-v3) · [Source code](https://github.com/subwaycookiecrunch/Meta-project)
+[Try it yourself →](https://huggingface.co/spaces/lucid987654/code-review-env-v3) · [Source code](https://github.com/subwaycookiecrunch/Meta-final-round-)
 
 
 
@@ -209,6 +209,6 @@ Trained on one GPU. Transfers to domains it never saw. Survives adversarial atta
 
 
 
-*Built for the Meta PyTorch OpenEnv Hackathon 2026 · Theme 3.1 World Modeling*
+*Built with PyTorch OpenEnv. Submitted to the Razorpay AI Buildathon 2026 — Open Track.*
 
-More depth: [`PAPER.md`](https://github.com/subwaycookiecrunch/Meta-project/blob/main/PAPER.md) · Red team: [`SAFEGUARDS.md`](https://github.com/subwaycookiecrunch/Meta-project/blob/main/SAFEGUARDS.md) · Judge checklist: [`JUDGES.md`](https://github.com/subwaycookiecrunch/Meta-project/blob/main/JUDGES.md)
+More depth: [`PAPER.md`](https://github.com/subwaycookiecrunch/Meta-final-round-/blob/main/PAPER.md) · Red team: [`SAFEGUARDS.md`](https://github.com/subwaycookiecrunch/Meta-final-round-/blob/main/SAFEGUARDS.md) · Judge checklist: [`JUDGES.md`](https://github.com/subwaycookiecrunch/Meta-final-round-/blob/main/JUDGES.md)

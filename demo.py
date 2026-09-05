@@ -5,6 +5,10 @@ Shows how different agent strategies interact with the
 MCP-based environment using tools to read code, search,
 and triage CVE vulnerabilities.
 """
+# NOTE: This demo uses heuristic agent strategies to demonstrate the environment.
+# The smart-investigator agent approximates the behavior learned by GRPO training.
+# For actual trained model inference, see inference.py with a GPU-trained checkpoint.
+
 import sys
 import os
 import re
@@ -44,7 +48,7 @@ def call_tool(env, name, args=None):
 
 
 # ── Agent: Blind Skip (worst baseline) ──────────────────────────
-def agent_blind_skip(env, files):
+def heuristic_agent_blind_skip(env, files):
     """Skips everything without reading. Should score terribly."""
     for f in files:
         call_tool(env, "skip_file", {"file_path": f, "reasoning": "skipping"})
@@ -55,7 +59,7 @@ def agent_blind_skip(env, files):
 
 
 # ── Agent: Flag Everything (dumb baseline) ──────────────────────
-def agent_flag_all(env, files):
+def heuristic_agent_flag_all(env, files):
     """Flags everything without reading. Wastes budget."""
     for f in files:
         result = call_tool(env, "flag_vulnerable", {
@@ -72,7 +76,7 @@ def agent_flag_all(env, files):
 
 
 # ── Agent: Read-Then-Decide (smart heuristic) ──────────────────
-def agent_smart_investigator(env, files, cve_desc):
+def heuristic_agent_smart_investigator(env, files, cve_desc):
     """Reads code, searches for patterns, then makes informed decisions."""
 
     # Step 1: Search for vulnerability-related patterns
@@ -143,9 +147,9 @@ def main():
     print("=" * 70)
 
     agents = {
-        "blind-skip": agent_blind_skip,
-        "flag-all": agent_flag_all,
-        "smart-investigator": agent_smart_investigator,
+        "blind-skip": heuristic_agent_blind_skip,
+        "flag-all": heuristic_agent_flag_all,
+        "smart-investigator": heuristic_agent_smart_investigator,
     }
 
     results = {}

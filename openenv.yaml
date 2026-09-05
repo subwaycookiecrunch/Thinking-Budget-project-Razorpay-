@@ -1,5 +1,5 @@
 # OpenEnv Manifest — The Thinking Budget
-# Meta PyTorch OpenEnv Hackathon 2026
+# Razorpay AI Buildathon 2026 — Open Track
 # Primary theme: #5 Wild Card  (out-of-box / metacognitive RL)
 # Secondary:    3.1 World Modeling → Professional Tasks
 name: thinking-budget
@@ -166,7 +166,7 @@ training:
 deployment:
   hf_space: lucid987654/code-review-env-v3
   hf_url: https://huggingface.co/spaces/lucid987654/code-review-env-v3
-  github: https://github.com/subwaycookiecrunch/Meta-project
+  github: https://github.com/subwaycookiecrunch/Meta-final-round-
   app_entry: app.py
   sdk: gradio
   port: 7860

@@ -79,18 +79,19 @@ def transfer_metrics_md():
         "| Policy | F1 | Thinking ratio (bug / safe) |",
         "|---|---:|---:|",
         f"| Untrained baseline | {m['untrained_f1']:.2f} | {m['untrained_thinking_ratio']:.2f}× |",
-        f"| Metacognitive policy | **{m['oracle_f1']:.2f}** | **{m['oracle_thinking_ratio']:.2f}×** |",
+        f"| Simulated trained policy | **{m['simulated_f1']:.2f}** | **{m['simulated_thinking_ratio']:.2f}×** |",
         "",
-        "**The same allocation policy that solves CVE triage transfers, "
-        "without retraining, to a different code-review domain.**",
+        "**The risk-driven allocation heuristic that approximates the trained policy's behavior "
+        "transfers to a different code-review domain without retraining.**",
         "",
         "#### Per-task breakdown",
-        "| Task | Untrained F1 | Metacognitive F1 |",
+        "| Task | Untrained F1 | Simulated trained F1 |",
         "|---|---:|---:|",
     ]
     for t in m.get("per_task", []):
+        sim_key = t.get('simulated_f1', t.get('oracle_f1', 0.0))
         lines.append(
-            f"| {t['title']} | {t['untrained_f1']:.2f} | **{t['oracle_f1']:.2f}** |"
+            f"| {t['title']} | {t['untrained_f1']:.2f} | **{sim_key:.2f}** |"
         )
     return "\n".join(lines)
 
@@ -626,7 +627,7 @@ HEADLINE_MD = """
 | Transfer F1 to held-out non-CVE domain | 0.28 | **1.00** |
 | Adversarial robustness (best red-team attack) | — | **−22% gap** |
 
-— Meta PyTorch OpenEnv Hackathon 2026 · Theme 3.1 · [Paper](https://github.com/subwaycookiecrunch/Meta-project/blob/main/PAPER.md) · [Safeguards](https://github.com/subwaycookiecrunch/Meta-project/blob/main/SAFEGUARDS.md) · [Judges' Checklist](https://github.com/subwaycookiecrunch/Meta-project/blob/main/JUDGES.md)
+— Razorpay AI Buildathon 2026 · Open Track · [Paper](PAPER.md) · [Safeguards](SAFEGUARDS.md) · [Judges Checklist](JUDGES.md)
 """
 
 
@@ -1081,13 +1082,13 @@ with gr.Blocks(title="The Thinking Budget") as app:
                 "command where you can verify it in <1 minute. Total review time: "
                 "~14 minutes for a complete assessment.\n\n"
                 "### Links\n\n"
-                "- 💻 GitHub: https://github.com/subwaycookiecrunch/Meta-project\n"
-                "- 📓 Colab: https://colab.research.google.com/github/subwaycookiecrunch/Meta-project/blob/main/train_colab.ipynb\n"
+                "- 💻 GitHub: https://github.com/subwaycookiecrunch/Meta-final-round-\n"
+                "- 📓 Colab: https://colab.research.google.com/github/subwaycookiecrunch/Meta-final-round-/blob/main/train_colab.ipynb\n"
                 "- 📄 Paper-style writeup: [`PAPER.md`](PAPER.md) (formal reward equations + adversarial robustness proof)\n"
                 "- 🛡 Safeguards: [`SAFEGUARDS.md`](SAFEGUARDS.md) (red-team results)\n"
                 "- ✅ Verification checklist: [`JUDGES.md`](JUDGES.md)\n"
                 "- ✍️ Blog: see `blog_post.md`\n\n"
-                "**Built for the Meta PyTorch OpenEnv Hackathon 2026 — Theme 3.1.**"
+                "**Built with PyTorch OpenEnv. Submitted to the Razorpay AI Buildathon 2026 — Open Track.**"
             )
 
 
